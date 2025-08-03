@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استمارة اشتراك الوجبات</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        /* Custom styles for the modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            left: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        /* Style for the date picker */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-2xl text-right">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">استمارة اشتراك الوجبات</h1>
+        
+        <form id="subscriptionForm" class="space-y-6">
+            <!-- قسم المعلومات الشخصية -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">بياناتك الشخصية</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">الاسم الكامل</label>
+                        <input type="text" id="name" name="name" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                    </div>
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700">رقم الهاتف</label>
+                        <input type="tel" id="phone" name="phone" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 text-left" placeholder="965XXXXXXXX">
+                        <small class="mt-1 text-xs text-gray-500">سيتم تحويل الأرقام العربية إلى إنجليزية تلقائياً.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم العنوان -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">معلومات العنوان</h2>
+                <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                    <label class="flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                        <input type="radio" name="addressType" value="house" checked class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                        <span class="ml-2">بيت</span>
+                    </label>
+                    <label class="flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                        <input type="radio" name="addressType" value="apartment" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                        <span class="ml-2">شقة</span>
+                    </label>
+                </div>
+
+                <!-- حقول عنوان البيت -->
+                <div id="houseFields" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="houseArea" class="block text-sm font-medium text-gray-700">المنطقة</label>
+                            <input type="text" id="houseArea" name="houseArea" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                        </div>
+                        <div>
+                            <label for="houseBlock" class="block text-sm font-medium text-gray-700">القطعة</label>
+                            <input type="text" id="houseBlock" name="houseBlock" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                        </div>
+                        <div>
+                            <label for="houseStreet" class="block text-sm font-medium text-gray-700">الشارع</label>
+                            <input type="text" id="houseStreet" name="houseStreet" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                        </div>
+                        <div>
+                            <label for="houseAve" class="block text-sm font-medium text-gray-700">الجادة (اختياري)</label>
+                            <input type="text" id="houseAve" name="houseAve" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="houseNumber" class="block text-sm font-medium text-gray-700">رقم المنزل</label>
+                            <input type="text" id="houseNumber" name="houseNumber" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="houseNeighbor" class="block text-sm font-medium text-gray-700">مبنى مجاور؟ (اختياري)</label>
+                        <input type="text" id="houseNeighbor" name="houseNeighbor" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+
+                <!-- حقول عنوان الشقة (مخفية بشكل افتراضي) -->
+                <div id="apartmentFields" class="space-y-4 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="apartmentArea" class="block text-sm font-medium text-gray-700">المنطقة</label>
+                            <input type="text" id="apartmentArea" name="apartmentArea" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="apartmentBlock" class="block text-sm font-medium text-gray-700">القطعة</label>
+                            <input type="text" id="apartmentBlock" name="apartmentBlock" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="apartmentStreet" class="block text-sm font-medium text-gray-700">الشارع</label>
+                            <input type="text" id="apartmentStreet" name="apartmentStreet" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="apartmentAve" class="block text-sm font-medium text-gray-700">الجادة (اختياري)</label>
+                            <input type="text" id="apartmentAve" name="apartmentAve" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="buildingNumber" class="block text-sm font-medium text-gray-700">رقم/اسم البناية</label>
+                            <input type="text" id="buildingNumber" name="buildingNumber" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="floorNumber" class="block text-sm font-medium text-gray-700">الطابق</label>
+                            <input type="text" id="floorNumber" name="floorNumber" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label for="apartmentNumber" class="block text-sm font-medium text-gray-700">الشقة</label>
+                            <input type="text" id="apartmentNumber" name="apartmentNumber" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="apartmentNeighbor" class="block text-sm font-medium text-gray-700">مبنى مجاور؟ (اختياري)</label>
+                        <input type="text" id="apartmentNeighbor" name="apartmentNeighbor" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم الاشتراكات -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">اختر نوع الاشتراك</h2>
+                <div class="space-y-4">
+                    <!-- الاشتراكات -->
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="1" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" required>
+                            <span class="mr-2">1. اشتراك إنقاص الوزن النباتي</span>
+                        </label>
+                        <select name="duration_1" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_87.5">أسبوع (87.5 د.ك)</option>
+                            <option value="14_120">2 أسبوع (120 د.ك)</option>
+                            <option value="28_240">4 أسابيع (240 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a1.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="2" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">2. اشتراك إنقاص الوزن</span>
+                        </label>
+                        <select name="duration_2" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_93.5">أسبوع (93.5 د.ك)</option>
+                            <option value="14_130">2 أسبوع (130 د.ك)</option>
+                            <option value="28_250">4 أسابيع (250 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a2.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="3" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">3. اشتراك خاص لرفع المناعة</span>
+                        </label>
+                        <select name="duration_3" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_95">أسبوع (95 د.ك)</option>
+                            <option value="14_145">2 أسبوع (145 د.ك)</option>
+                            <option value="28_280">4 أسابيع (280 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a3.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="4" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">4. اشتراك نظام الكيتو</span>
+                        </label>
+                        <select name="duration_4" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_95">أسبوع (95 د.ك)</option>
+                            <option value="14_140">2 أسبوع (140 د.ك)</option>
+                            <option value="28_280">4 أسابيع (280 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a4.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="5" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">5. اشتراك خالي من الجلوتين</span>
+                        </label>
+                        <select name="duration_5" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_93.5">أسبوع (93.5 د.ك)</option>
+                            <option value="14_130">2 أسبوع (130 د.ك)</option>
+                            <option value="28_260">4 أسابيع (260 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a5.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="6" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">6. اشتراك خالي من الجلوتين ومنتجات الألبان</span>
+                        </label>
+                        <select name="duration_6" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_91.5">أسبوع (91.5 د.ك)</option>
+                            <option value="14_128.5">2 أسبوع (128.5 د.ك)</option>
+                            <option value="28_255">4 أسابيع (255 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a6.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="7" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">7. اشتراك التخلص من الالتهابات بالصيام المتقطع (مع اشتراك تيليجرام مجاني)</span>
+                        </label>
+                        <select name="duration_7" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="10_120">10 أيام (120 د.ك)</option>
+                            <option value="20_200">20 يوم (200 د.ك)</option>
+                            <option value="30_290">30 يوم (290 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a7.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="8" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">8. اشتراك التخلص من الإلتهابات بدون صيام (مع اشتراك تيليجرام مجاني)</span>
+                        </label>
+                        <select name="duration_8" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="10_130">10 أيام (130 د.ك)</option>
+                            <option value="20_210">20 يوم (210 د.ك)</option>
+                            <option value="30_300">30 يوم (300 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a8.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="9" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">9. اشتراك رمضان</span>
+                        </label>
+                        <select name="duration_9" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_90">أسبوع (90 د.ك)</option>
+                            <option value="14_140">2 أسبوع (140 د.ك)</option>
+                            <option value="28_240">4 أسابيع (240 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a9.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="10" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">10. اشتراك رمضان النباتي</span>
+                        </label>
+                        <select name="duration_10" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_80">أسبوع (80 د.ك)</option>
+                            <option value="14_130">2 أسبوع (130 د.ك)</option>
+                            <option value="28_230">4 أسابيع (230 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a10.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="11" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">11. اشتراك رفع نسب امتصاص الفيتامينات، والمعادن (يصلح للنساء الحوامل)</span>
+                        </label>
+                        <select name="duration_11" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_93.5">أسبوع (93.5 د.ك)</option>
+                            <option value="14_130">2 أسبوع (130 د.ك)</option>
+                            <option value="28_250">4 أسابيع (250 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a11.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="12" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">12. اشتراك خاص للنساء المرضعات</span>
+                        </label>
+                        <select name="duration_12" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_93.5">أسبوع (93.5 د.ك)</option>
+                            <option value="14_130">2 أسبوع (130 د.ك)</option>
+                            <option value="28_260">4 أسابيع (260 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a12.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="13" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">13. اشتراك ضد أنواع الحساسيات الشائعة</span>
+                        </label>
+                        <select name="duration_13" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_96.5">أسبوع (96.5 د.ك)</option>
+                            <option value="14_133.5">2 أسبوع (133.5 د.ك)</option>
+                            <option value="28_260">4 أسابيع (260 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a13.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="14" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">14. اشتراك خاص للرياضيين</span>
+                        </label>
+                        <select name="duration_14" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="10_120">10 أيام (120 د.ك)</option>
+                            <option value="20_180">20 يوم (180 د.ك)</option>
+                            <option value="30_230">30 يوم (230 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a14.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="15" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">15. اسلوب الحياة الصحية (غير مخصص لخسارة الوزن)</span>
+                        </label>
+                        <select name="duration_15" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="10_120">10 أيام (120 د.ك)</option>
+                            <option value="20_180">20 يوم (180 د.ك)</option>
+                            <option value="30_230">30 يوم (230 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a15.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="16" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">16. اشتراك الأخصائية ريم العنزي، محسوب السعرات</span>
+                        </label>
+                        <select name="duration_16" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="10_150">10 أيام (150 د.ك)</option>
+                            <option value="20_200">20 يوم (200 د.ك)</option>
+                            <option value="30_230">30 يوم (230 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a16.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
+                        <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
+                            <input type="radio" name="subscription" value="17" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500">
+                            <span class="mr-2">17. اشتراك ريوق المستشفى</span>
+                        </label>
+                        <select name="duration_17" class="w-1/2 sm:w-1/3 px-2 py-1 border border-gray-300 rounded-md text-sm">
+                            <option value="7_50">أسبوع (50 د.ك)</option>
+                            <option value="14_80">2 أسبوع (80 د.ك)</option>
+                            <option value="28_120">4 أسابيع (120 د.ك)</option>
+                        </select>
+                        <button type="button" onclick="showMealPlan('a17.jpg')" class="bg-green-500 text-white text-xs px-2 py-1 rounded-md hover:bg-green-600 transition-colors">جدول الوجبات</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم التواريخ والأيام -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">تحديد أيام الاشتراك</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="startDate" class="block text-sm font-medium text-gray-700">يوم بدء الاشتراك</label>
+                        <input type="date" id="startDate" name="startDate" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
+                    </div>
+                    <div id="subscriptionDatesSummary" class="bg-gray-100 p-4 rounded-md text-center text-sm font-medium text-gray-600 hidden">
+                        <!-- هنا سيتم عرض تاريخي البدء والانتهاء -->
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الأيام التي لا تريد فيها استلام وجبات:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-sm text-center">
+                            <!-- مربعات اختيار أيام الأسبوع -->
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="0" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الأحد</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="1" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الاثنين</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="2" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الثلاثاء</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="3" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الأربعاء</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="4" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الخميس</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="5" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">الجمعة</span>
+                            </label>
+                            <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
+                                <input type="checkbox" name="deliveryDays" value="6" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                                <span class="mr-2">السبت</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم الشروط والأحكام -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">الشروط والأحكام</h2>
+                <div class="text-sm text-gray-600 space-y-2">
+                    <p>قد يكون هناك رسوم توصيل إضافية على سعر الاشتراك.</p>
+                    <p>إذا تم إلغاء الاشتراك لأي سبب من طرف العميل، يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون أو مطعم التين الطبيعي في أي وقت.</p>
+                </div>
+                <div class="mt-4 flex items-start">
+                    <input type="checkbox" id="termsCheck" name="termsCheck" class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500" required>
+                    <label for="termsCheck" class="mr-2 text-sm font-medium text-gray-700 cursor-pointer">أوافق على الشروط والأحكام.</label>
+                </div>
+            </div>
+
+            <!-- زر الإرسال -->
+            <div class="mt-8 text-center">
+                <button type="submit" id="submitBtn" class="w-full px-6 py-3 text-lg font-bold text-white bg-green-600 rounded-xl shadow-lg hover:bg-green-700 transition-colors duration-300" disabled>
+                    أرسل لاعتماد اشتراكك
+                </button>
+            </div>
+            <div id="errorMessage" class="text-red-500 text-sm mt-2 text-center hidden">
+                الرجاء الموافقة على الشروط والأحكام لإرسال طلبك.
+            </div>
+        </form>
+    </div>
+
+    <!-- نافذة عرض صورة جدول الوجبات -->
+    <div id="mealPlanModal" class="modal">
+        <span class="modal-close" onclick="closeMealPlanModal()">&times;</span>
+        <img class="modal-content rounded-lg" id="modalImage">
+    </div>
+
+    <script>
+        // تعريف المتغيرات الرئيسية
+        const form = document.getElementById('subscriptionForm');
+        const phoneInput = document.getElementById('phone');
+        const houseFields = document.getElementById('houseFields');
+        const apartmentFields = document.getElementById('apartmentFields');
+        const addressTypeRadios = document.querySelectorAll('input[name="addressType"]');
+        const startDateInput = document.getElementById('startDate');
+        const deliveryDaysCheckboxes = document.querySelectorAll('input[name="deliveryDays"]');
+        const subscriptionRadios = document.querySelectorAll('input[name="subscription"]');
+        const subscriptionDatesSummary = document.getElementById('subscriptionDatesSummary');
+        const termsCheckbox = document.getElementById('termsCheck');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const mealPlanModal = document.getElementById('mealPlanModal');
+        const modalImage = document.getElementById('modalImage');
+        
+        // معلومات الاشتراكات للتسهيل
+        const subscriptionsData = {
+            '1': { name: 'اشتراك إنقاص الوزن النباتي', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '87.5 د.ك', '14': '120 د.ك', '28': '240 د.ك' } },
+            '2': { name: 'اشتراك إنقاص الوزن', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '93.5 د.ك', '14': '130 د.ك', '28': '250 د.ك' } },
+            '3': { name: 'اشتراك خاص لرفع المناعة', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '95 د.ك', '14': '145 د.ك', '28': '280 د.ك' } },
+            '4': { name: 'اشتراك نظام الكيتو', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '95 د.ك', '14': '140 د.ك', '28': '280 د.ك' } },
+            '5': { name: 'اشتراك خالي من الجلوتين', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '93.5 د.ك', '14': '130 د.ك', '28': '260 د.ك' } },
+            '6': { name: 'اشتراك خالي من الجلوتين ومنتجات الألبان', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '91.5 د.ك', '14': '128.5 د.ك', '28': '255 د.ك' } },
+            '7': { name: 'اشتراك التخلص من الالتهابات بالصيام المتقطع', durations: { '10': '10 أيام', '20': '20 يوم', '30': '30 يوم' }, prices: { '10': '120 د.ك', '20': '200 د.ك', '30': '290 د.ك' }, telegram: true },
+            '8': { name: 'اشتراك التخلص من الإلتهابات بدون صيام', durations: { '10': '10 أيام', '20': '20 يوم', '30': '30 يوم' }, prices: { '10': '130 د.ك', '20': '210 د.ك', '30': '300 د.ك' }, telegram: true },
+            '9': { name: 'اشتراك رمضان', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '90 د.ك', '14': '140 د.ك', '28': '240 د.ك' } },
+            '10': { name: 'اشتراك رمضان النباتي', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '80 د.ك', '14': '130 د.ك', '28': '230 د.ك' } },
+            '11': { name: 'اشتراك رفع نسب امتصاص الفيتامينات، والمعادن', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '93.5 د.ك', '14': '130 د.ك', '28': '250 د.ك' } },
+            '12': { name: 'اشتراك خاص للنساء المرضعات', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '93.5 د.ك', '14': '130 د.ك', '28': '260 د.ك' } },
+            '13': { name: 'اشتراك ضد أنواع الحساسيات الشائعة', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '96.5 د.ك', '14': '133.5 د.ك', '28': '260 د.ك' } },
+            '14': { name: 'اشتراك خاص للرياضيين', durations: { '10': '10 أيام', '20': '20 يوم', '30': '30 يوم' }, prices: { '10': '120 د.ك', '20': '180 د.ك', '30': '230 د.ك' } },
+            '15': { name: 'اسلوب الحياة الصحية', durations: { '10': '10 أيام', '20': '20 يوم', '30': '30 يوم' }, prices: { '10': '120 د.ك', '20': '180 د.ك', '30': '230 د.ك' } },
+            '16': { name: 'اشتراك الأخصائية ريم العنزي، محسوب السعرات', durations: { '10': '150 د.ك', '20': '200 د.ك', '30': '230 د.ك' } },
+            '17': { name: 'اشتراك ريوق المستشفى', durations: { '7': 'أسبوع', '14': '2 أسبوع', '28': '4 أسابيع' }, prices: { '7': '50 د.ك', '14': '80 د.ك', '28': '120 د.ك' } },
+        };
+        
+        // وظيفة تحويل الأرقام العربية إلى إنجليزية
+        phoneInput.addEventListener('input', (e) => {
+            const arabicToEnglish = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            e.target.value = arabicToEnglish(e.target.value);
+        });
+
+        // وظيفة تبديل حقول العنوان
+        addressTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'house') {
+                    houseFields.classList.remove('hidden');
+                    apartmentFields.classList.add('hidden');
+                    // جعل حقول الشقة غير مطلوبة والعكس
+                    apartmentFields.querySelectorAll('input').forEach(input => input.removeAttribute('required'));
+                    houseFields.querySelectorAll('input').forEach(input => input.setAttribute('required', ''));
+                } else {
+                    houseFields.classList.add('hidden');
+                    apartmentFields.classList.remove('hidden');
+                    // جعل حقول البيت غير مطلوبة والعكس
+                    houseFields.querySelectorAll('input').forEach(input => input.removeAttribute('required'));
+                    apartmentFields.querySelectorAll('input').forEach(input => input.setAttribute('required', ''));
+                }
+            });
+        });
+        
+        // وظيفة حساب تاريخ الانتهاء
+        function calculateEndDate() {
+            const startDate = startDateInput.value;
+            const selectedSub = document.querySelector('input[name="subscription"]:checked');
+            
+            if (!startDate || !selectedSub) {
+                subscriptionDatesSummary.classList.add('hidden');
+                return;
+            }
+            
+            const selectedDuration = document.querySelector(`select[name="duration_${selectedSub.value}"]`).value;
+            const durationInDays = parseInt(selectedDuration.split('_')[0]);
+            
+            const deliveryDays = Array.from(deliveryDaysCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.value));
+
+            let currentDate = new Date(startDate);
+            currentDate.setDate(currentDate.getDate()); // تأكيد أن التاريخ يبدأ من اليوم المحدد
+            let subscriptionDaysCount = 0;
+            
+            while (subscriptionDaysCount < durationInDays) {
+                const dayOfWeek = currentDate.getDay(); // 0 = الأحد, 1 = الاثنين...
+                if (deliveryDays.includes(dayOfWeek)) {
+                    subscriptionDaysCount++;
+                }
+                if (subscriptionDaysCount < durationInDays) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+            
+            const endDate = currentDate;
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            
+            subscriptionDatesSummary.innerHTML = `
+                يبدأ اشتراكك: <span class="font-bold">${new Date(startDate).toLocaleDateString('ar-KW', options)}</span><br>
+                ينتهي اشتراكك: <span class="font-bold">${endDate.toLocaleDateString('ar-KW', options)}</span>
+            `;
+            subscriptionDatesSummary.classList.remove('hidden');
+        }
+
+        // الاستماع لتغييرات التواريخ والاشتراكات لحساب تاريخ الانتهاء
+        startDateInput.addEventListener('change', calculateEndDate);
+        deliveryDaysCheckboxes.forEach(cb => cb.addEventListener('change', calculateEndDate));
+        
+        subscriptionRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                const subscriptionId = radio.value;
+                document.querySelectorAll('select[name^="duration_"]').forEach(select => select.style.display = 'none');
+                document.querySelector(`select[name="duration_${subscriptionId}"]`).style.display = 'block';
+                calculateEndDate();
+            });
+        });
+        
+        // وظيفة تفعيل زر الإرسال عند الموافقة على الشروط
+        termsCheckbox.addEventListener('change', () => {
+            submitBtn.disabled = !termsCheckbox.checked;
+            if (termsCheckbox.checked) {
+                errorMessage.classList.add('hidden');
+            }
+        });
+
+        // *** تم تعديل هذه الدالة لاستخدام الصور المحلية مع بديل وهمي في حال عدم وجودها ***
+        function showMealPlan(imageName) {
+            const modalImage = document.getElementById('modalImage');
+            
+            // حاول تحميل الصورة المحلية أولاً
+            modalImage.src = imageName;
+            
+            // في حالة فشل تحميل الصورة المحلية، استخدم صورة بديلة (placeholder)
+            modalImage.onerror = function() {
+                const subscriptionNumber = imageName.match(/a(\d+)\.jpg/)[1];
+                modalImage.src = `https://via.placeholder.com/800x600/526743/ffffff?text=جدول+وجبات+رقم+${subscriptionNumber}`;
+                // منع حلقة لانهائية في حالة فشل الصورة البديلة أيضاً
+                modalImage.onerror = null;
+            };
+            
+            mealPlanModal.style.display = "flex";
+        }
+
+        // وظيفة إغلاق النافذة المنبثقة
+        function closeMealPlanModal() {
+            mealPlanModal.style.display = "none";
+        }
+        
+        // عند تحميل الصفحة، تأكد من عرض حقول العنوان الصحيحة وتفعيل أول خيار اشتراك
+        window.onload = function() {
+            addressTypeRadios.forEach(radio => {
+                if (radio.checked) {
+                    const event = new Event('change');
+                    radio.dispatchEvent(event);
+                }
+            });
+
+            // جعل أول اشتراك محددا بشكل افتراضي
+            const firstSubscription = document.querySelector('input[name="subscription"]');
+            if (firstSubscription) {
+                firstSubscription.checked = true;
+                const event = new Event('change');
+                firstSubscription.dispatchEvent(event);
+            }
+        };
+
+        // معالجة إرسال النموذج لإنشاء رسالة واتساب
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (!termsCheckbox.checked) {
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // جمع البيانات من النموذج
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const addressType = document.querySelector('input[name="addressType"]:checked').value;
+            let addressDetails = '';
+
+            if (addressType === 'house') {
+                const area = document.getElementById('houseArea').value;
+                const block = document.getElementById('houseBlock').value;
+                const street = document.getElementById('houseStreet').value;
+                const ave = document.getElementById('houseAve').value;
+                const number = document.getElementById('houseNumber').value;
+                const neighbor = document.getElementById('houseNeighbor').value;
+                addressDetails = `
+*النوع:* بيت
+*المنطقة:* ${area}
+*القطعة:* ${block}
+*الشارع:* ${street}
+*الجادة:* ${ave || 'لا يوجد'}
+*رقم المنزل:* ${number}
+*مبنى مجاور:* ${neighbor || 'لا يوجد'}
+                `;
+            } else {
+                const area = document.getElementById('apartmentArea').value;
+                const block = document.getElementById('apartmentBlock').value;
+                const street = document.getElementById('apartmentStreet').value;
+                const ave = document.getElementById('apartmentAve').value;
+                const building = document.getElementById('buildingNumber').value;
+                const floor = document.getElementById('floorNumber').value;
+                const apartment = document.getElementById('apartmentNumber').value;
+                const neighbor = document.getElementById('apartmentNeighbor').value;
+                addressDetails = `
+*النوع:* شقة
+*المنطقة:* ${area}
+*القطعة:* ${block}
+*الشارع:* ${street}
+*الجادة:* ${ave || 'لا يوجد'}
+*رقم/اسم البناية:* ${building}
+*الطابق:* ${floor}
+*الشقة:* ${apartment}
+*مبنى مجاور:* ${neighbor || 'لا يوجد'}
+                `;
+            }
+
+            const selectedSubRadio = document.querySelector('input[name="subscription"]:checked');
+            const subId = selectedSubRadio.value;
+            const subInfo = subscriptionsData[subId];
+            const durationSelect = document.querySelector(`select[name="duration_${subId}"]`);
+            const selectedDurationValue = durationSelect.value;
+            const durationInDays = selectedDurationValue.split('_')[0];
+            const price = selectedDurationValue.split('_')[1];
+            const durationName = subInfo.durations[durationInDays];
+            const startDate = document.getElementById('startDate').value;
+
+            const selectedDaysOff = Array.from(deliveryDaysCheckboxes)
+                .filter(cb => !cb.checked)
+                .map(cb => {
+                    const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                    return days[parseInt(cb.value)];
+                });
+            
+            // حساب تاريخ الانتهاء مرة أخرى لضمان الدقة
+            let endDate = new Date(startDate);
+            let totalDaysCount = 0;
+            let currentCheckDate = new Date(startDate);
+
+            while (totalDaysCount < parseInt(durationInDays)) {
+                const dayOfWeek = currentCheckDate.getDay();
+                const deliveryDays = Array.from(deliveryDaysCheckboxes)
+                                    .filter(cb => cb.checked)
+                                    .map(cb => parseInt(cb.value));
+
+                if (deliveryDays.includes(dayOfWeek)) {
+                    totalDaysCount++;
+                }
+                
+                if (totalDaysCount < parseInt(durationInDays)) {
+                     currentCheckDate.setDate(currentCheckDate.getDate() + 1);
+                }
+            }
+            endDate = currentCheckDate;
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const endDateString = endDate.toLocaleDateString('ar-KW', options);
+
+            const telegramMessage = subInfo.telegram ? '\n*اشتراك تيليجرام مجاني:* نعم' : '';
+
+            // إنشاء نص الرسالة
+            const message = `
+*طلب اشتراك جديد*
+
+*البيانات الشخصية:*
+*الاسم:* ${name}
+*رقم الهاتف:* ${phone}
+
+*معلومات العنوان:*
+${addressDetails}
+
+*تفاصيل الاشتراك:*
+*نوع الاشتراك:* ${subInfo.name}
+*المدة:* ${durationName} (${durationInDays} يوم)
+*السعر:* ${price} د.ك
+*تاريخ البدء:* ${new Date(startDate).toLocaleDateString('ar-KW', options)}
+*تاريخ الانتهاء:* ${endDateString}
+*أيام عدم التوصيل:* ${selectedDaysOff.length > 0 ? selectedDaysOff.join(', ') : 'لا يوجد'}
+${telegramMessage}
+
+*الرجاء تأكيد هذا الطلب.*
+            `.trim();
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/96566906605?text=${encodedMessage}`;
+            
+            window.open(whatsappUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
