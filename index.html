@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>استمارة اشتراك الوجبات</title>
-    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -58,7 +57,6 @@
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">استمارة اشتراك الوجبات</h1>
         
         <form id="subscriptionForm" class="space-y-6">
-            <!-- قسم المعلومات الشخصية -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">بياناتك الشخصية</h2>
                 <div class="space-y-4">
@@ -68,13 +66,12 @@
                     </div>
                     <div>
                         <label for="phone" class="block text-sm font-medium text-gray-700">رقم الهاتف</label>
-                        <input type="tel" id="phone" name="phone" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 text-left" placeholder="965XXXXXXXX">
+                        <input type="tel" id="phone" name="phone" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 text-left" placeholder="965XXXXXXXX" required>
                         <small class="mt-1 text-xs text-gray-500">سيتم تحويل الأرقام العربية إلى إنجليزية تلقائياً.</small>
                     </div>
                 </div>
             </div>
 
-            <!-- قسم العنوان -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">معلومات العنوان</h2>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
@@ -88,7 +85,6 @@
                     </label>
                 </div>
 
-                <!-- حقول عنوان البيت -->
                 <div id="houseFields" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -118,7 +114,6 @@
                     </div>
                 </div>
 
-                <!-- حقول عنوان الشقة (مخفية بشكل افتراضي) -->
                 <div id="apartmentFields" class="space-y-4 hidden">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -157,11 +152,9 @@
                 </div>
             </div>
 
-            <!-- قسم الاشتراكات -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">اختر نوع الاشتراك</h2>
                 <div class="space-y-4">
-                    <!-- الاشتراكات -->
                     <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
                         <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
                             <input type="radio" name="subscription" value="1" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" required>
@@ -385,7 +378,6 @@
                 </div>
             </div>
 
-            <!-- قسم التواريخ والأيام -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">تحديد أيام الاشتراك</h2>
                 <div class="space-y-4">
@@ -394,12 +386,10 @@
                         <input type="date" id="startDate" name="startDate" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
                     </div>
                     <div id="subscriptionDatesSummary" class="bg-gray-100 p-4 rounded-md text-center text-sm font-medium text-gray-600 hidden">
-                        <!-- هنا سيتم عرض تاريخي البدء والانتهاء -->
-                    </div>
+                        </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">الأيام التي لا تريد فيها استلام وجبات:</label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-sm text-center">
-                            <!-- مربعات اختيار أيام الأسبوع -->
                             <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
                                 <input type="checkbox" name="deliveryDays" value="0" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
                                 <span class="mr-2">الأحد</span>
@@ -433,7 +423,6 @@
                 </div>
             </div>
 
-            <!-- قسم الشروط والأحكام -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">الشروط والأحكام</h2>
                 <div class="text-sm text-gray-600 space-y-2">
@@ -441,14 +430,13 @@
                     <p>إذا تم إلغاء الاشتراك لأي سبب من طرف العميل، يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون أو مطعم التين الطبيعي في أي وقت.</p>
                 </div>
                 <div class="mt-4 flex items-start">
-                    <input type="checkbox" id="termsCheck" name="termsCheck" class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500" required>
+                    <input type="checkbox" id="termsCheck" name="termsCheck" class="h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
                     <label for="termsCheck" class="mr-2 text-sm font-medium text-gray-700 cursor-pointer">أوافق على الشروط والأحكام.</label>
                 </div>
             </div>
 
-            <!-- زر الإرسال -->
             <div class="mt-8 text-center">
-                <button type="submit" id="submitBtn" class="w-full px-6 py-3 text-lg font-bold text-white bg-green-600 rounded-xl shadow-lg hover:bg-green-700 transition-colors duration-300" disabled>
+                <button type="submit" id="submitBtn" class="w-full px-6 py-3 text-lg font-bold text-white bg-gray-400 rounded-xl shadow-lg transition-colors duration-300 cursor-not-allowed" disabled>
                     أرسل لاعتماد اشتراكك
                 </button>
             </div>
@@ -458,7 +446,6 @@
         </form>
     </div>
 
-    <!-- نافذة عرض صورة جدول الوجبات -->
     <div id="mealPlanModal" class="modal">
         <span class="modal-close" onclick="closeMealPlanModal()">&times;</span>
         <img class="modal-content rounded-lg" id="modalImage">
@@ -516,13 +503,15 @@
                     apartmentFields.classList.add('hidden');
                     // جعل حقول الشقة غير مطلوبة والعكس
                     apartmentFields.querySelectorAll('input').forEach(input => input.removeAttribute('required'));
-                    houseFields.querySelectorAll('input').forEach(input => input.setAttribute('required', ''));
+                    houseFields.querySelectorAll('input[id^="house"][id$="Ave"], input[id^="house"][id$="Neighbor"]').forEach(input => input.removeAttribute('required'));
+                    houseFields.querySelectorAll('input:not([id^="house"][id$="Ave"]):not([id^="house"][id$="Neighbor"])').forEach(input => input.setAttribute('required', ''));
                 } else {
                     houseFields.classList.add('hidden');
                     apartmentFields.classList.remove('hidden');
                     // جعل حقول البيت غير مطلوبة والعكس
                     houseFields.querySelectorAll('input').forEach(input => input.removeAttribute('required'));
-                    apartmentFields.querySelectorAll('input').forEach(input => input.setAttribute('required', ''));
+                    apartmentFields.querySelectorAll('input[id^="apartment"][id$="Ave"], input[id^="apartment"][id$="Neighbor"]').forEach(input => input.removeAttribute('required'));
+                    apartmentFields.querySelectorAll('input:not([id^="apartment"][id$="Ave"]):not([id^="apartment"][id$="Neighbor"])').forEach(input => input.setAttribute('required', ''));
                 }
             });
         });
@@ -581,11 +570,17 @@
             });
         });
         
-        // وظيفة تفعيل زر الإرسال عند الموافقة على الشروط
+        // *** تم تعديل هذه الدالة للتحكم في تفعيل زر الإرسال وتحديث مظهره ***
         termsCheckbox.addEventListener('change', () => {
-            submitBtn.disabled = !termsCheckbox.checked;
             if (termsCheckbox.checked) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
                 errorMessage.classList.add('hidden');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
             }
         });
 
