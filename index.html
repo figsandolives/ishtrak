@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>استمارة اشتراك الوجبات</title>
+    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -57,6 +58,7 @@
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">استمارة اشتراك الوجبات</h1>
         
         <form id="subscriptionForm" class="space-y-6">
+            <!-- قسم المعلومات الشخصية -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">بياناتك الشخصية</h2>
                 <div class="space-y-4">
@@ -72,6 +74,7 @@
                 </div>
             </div>
 
+            <!-- قسم العنوان -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">معلومات العنوان</h2>
                 <div class="flex flex-col sm:flex-row gap-4 mb-4">
@@ -85,6 +88,7 @@
                     </label>
                 </div>
 
+                <!-- حقول عنوان البيت -->
                 <div id="houseFields" class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -114,6 +118,7 @@
                     </div>
                 </div>
 
+                <!-- حقول عنوان الشقة (مخفية بشكل افتراضي) -->
                 <div id="apartmentFields" class="space-y-4 hidden">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -152,9 +157,11 @@
                 </div>
             </div>
 
+            <!-- قسم الاشتراكات -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">اختر نوع الاشتراك <span class="text-sm font-normal text-gray-500">(اضغط على زر جدول الوجبات لعرض جدول الوجبات لكل اشتراك)</span></h2>
                 <div class="space-y-4">
+                    <!-- الاشتراكات -->
                     <div class="flex items-center gap-4 bg-white p-4 rounded-md shadow-sm">
                         <label class="flex-1 flex items-center text-sm font-medium text-gray-700 cursor-pointer">
                             <input type="radio" name="subscription" value="1" class="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500" required>
@@ -395,6 +402,7 @@
                 </div>
             </div>
 
+            <!-- قسم التواريخ والأيام -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">تحديد أيام الاشتراك</h2>
                 <div class="space-y-4">
@@ -403,10 +411,12 @@
                         <input type="date" id="startDate" name="startDate" class="mt-1 block w-full px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500" required>
                     </div>
                     <div id="subscriptionDatesSummary" class="bg-gray-100 p-4 rounded-md text-center text-sm font-medium text-gray-600 hidden">
-                        </div>
+                        <!-- هنا سيتم عرض تاريخي البدء والانتهاء -->
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">الأيام التي لا تريد فيها استلام وجبات:</label>
                         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-sm text-center">
+                            <!-- مربعات اختيار أيام الأسبوع -->
                             <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-center cursor-pointer">
                                 <input type="checkbox" name="deliveryDays" value="0" checked class="h-4 w-4 text-green-600 border-gray-300 rounded">
                                 <span class="mr-2">الأحد</span>
@@ -439,7 +449,31 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- قسم وقت التوصيل المناسب -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">وقت التوصيل المناسب</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-center">
+                    <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-start cursor-pointer">
+                        <input type="radio" name="deliveryTime" value="9 صباحًا إلى 12 ظهرًا" class="h-4 w-4 text-green-600 border-gray-300 rounded" required>
+                        <span class="mr-2">9 صباحًا إلى 12 ظهرًا</span>
+                    </label>
+                    <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-start cursor-pointer">
+                        <input type="radio" name="deliveryTime" value="12 ظهرًا إلى 3 مساءً" class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                        <span class="mr-2">12 ظهرًا إلى 3 مساءً</span>
+                    </label>
+                    <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-start cursor-pointer">
+                        <input type="radio" name="deliveryTime" value="3 مساءً إلى 6 مساءً" class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                        <span class="mr-2">3 مساءً إلى 6 مساءً</span>
+                    </label>
+                    <label class="bg-white p-2 rounded-md shadow-sm flex items-center justify-start cursor-pointer">
+                        <input type="radio" name="deliveryTime" value="6 مساءً إلى 9 مساءً" class="h-4 w-4 text-green-600 border-gray-300 rounded">
+                        <span class="mr-2">6 مساءً إلى 9 مساءً</span>
+                    </label>
+                </div>
+            </div>
 
+            <!-- قسم الشروط والأحكام -->
             <div class="bg-gray-50 p-6 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">الشروط والأحكام</h2>
                 <div class="text-sm text-gray-600 space-y-2">
@@ -452,6 +486,7 @@
                 </div>
             </div>
 
+            <!-- زر الإرسال -->
             <div class="mt-8 text-center">
                 <button type="submit" id="submitBtn" class="w-full px-6 py-3 text-lg font-bold text-white bg-gray-400 rounded-xl shadow-lg transition-colors duration-300 cursor-not-allowed" disabled>
                     أرسل لاعتماد اشتراكك
@@ -463,6 +498,7 @@
         </form>
     </div>
 
+    <!-- نافذة عرض صورة جدول الوجبات -->
     <div id="mealPlanModal" class="modal">
         <span class="modal-close" onclick="closeMealPlanModal()">&times;</span>
         <img class="modal-content rounded-lg" id="modalImage">
@@ -642,6 +678,9 @@
                 const event = new Event('change');
                 firstSubscription.dispatchEvent(event);
             }
+
+            // تحديد وقت التوصيل الأول بشكل افتراضي
+            document.querySelector('input[name="deliveryTime"]').checked = true;
         };
 
         // معالجة إرسال النموذج لإنشاء رسالة واتساب
@@ -704,6 +743,7 @@
             const price = selectedDurationValue.split('_')[1];
             const durationName = subInfo.durations[durationInDays];
             const startDate = document.getElementById('startDate').value;
+            const deliveryTime = document.querySelector('input[name="deliveryTime"]:checked').value;
 
             const selectedDaysOff = Array.from(deliveryDaysCheckboxes)
                 .filter(cb => !cb.checked)
@@ -755,6 +795,7 @@ ${addressDetails}
 *تاريخ البدء:* ${new Date(startDate).toLocaleDateString('ar-KW', options)}
 *تاريخ الانتهاء:* ${endDateString}
 *أيام عدم التوصيل:* ${selectedDaysOff.length > 0 ? selectedDaysOff.join(', ') : 'لا يوجد'}
+*وقت التوصيل المناسب:* ${deliveryTime}
 ${telegramMessage}
             `.trim();
 
