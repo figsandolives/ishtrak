@@ -81,7 +81,6 @@ function setupFormPage() {
     let calculatedEndDate = '';
     let selectedPrice = 0;
 
-    // تهيئة الحقول المطلوبة عند التحميل الأولي
     document.querySelectorAll('#house-fields input[required]').forEach(input => input.setAttribute('required', 'required'));
     document.querySelectorAll('#apartment-fields input[required]').forEach(input => input.removeAttribute('required'));
 
@@ -465,12 +464,18 @@ async function printSubscription(id) {
     printWindow.document.write('</div>');
 
     let imageUrls = [];
-    const subIdFromType = sub.subscription.type.split('-')[0].trim();
     let subIdNumeric = '';
+    const subType = sub.subscription.type;
     
     // محاولة استخراج الرقم من بداية اسم الاشتراك
-    if (subIdFromType.match(/^\d+/)) {
-        subIdNumeric = subIdFromType.match(/^\d+/)[0];
+    const match = subType.match(/^\d+/);
+    if (match) {
+        subIdNumeric = match[0];
+    } else {
+      // إذا كان الاشتراك المخصص، تحقق من اسم الاشتراك لتعيين القيمة
+      if (subType.includes('اشتراك مخصص')) {
+        subIdNumeric = '18';
+      }
     }
 
     const period = sub.subscription.period;
@@ -480,7 +485,7 @@ async function printSubscription(id) {
     if (period.includes('4اسابيع') || period.includes('30يوم')) copies = 3;
 
     // معالجة الاشتراك المخصص (id=18)
-    if (subIdFromType === 'اشتراك مخصص' && sub.subscription.customImageUrl) {
+    if (subIdNumeric === '18' && sub.subscription.customImageUrl) {
         imageUrls.push(sub.subscription.customImageUrl);
     } else if (subIdNumeric >= 1 && subIdNumeric <= 17) {
         const imagePath = `a${subIdNumeric}.jpg`;
