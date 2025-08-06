@@ -81,7 +81,6 @@ function setupFormPage() {
     let calculatedEndDate = '';
     let selectedPrice = 0;
 
-    // تهيئة الحقول المطلوبة عند التحميل الأولي
     document.querySelectorAll('#house-fields input[required]').forEach(input => input.setAttribute('required', 'required'));
     document.querySelectorAll('#apartment-fields input[required]').forEach(input => input.removeAttribute('required'));
 
@@ -203,7 +202,6 @@ function setupFormPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // جمع البيانات
         const subscriptionData = {
             customerName: document.getElementById('customer-name').value,
             phoneNumber: phoneInput.value,
@@ -281,23 +279,22 @@ function setupSignPage() {
     const clearBtn = document.getElementById('clear-signature-btn');
     const summaryDiv = document.getElementById('subscription-summary');
 
+    // تهيئة SignaturePad أولاً وقبل كل شيء
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(248, 248, 248)'
+    });
+
     // وظيفة لضبط حجم لوحة التوقيع
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear(); // مسح اللوحة بعد تغيير الحجم
+        signaturePad.clear();
     }
-
-    // تهيئة لوحة التوقيع
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(248, 248, 248)'
-    });
     
-    // ضبط الحجم عند تحميل الصفحة وعند تغيير حجم النافذة
     window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // استدعاء الوظيفة لأول مرة
+    resizeCanvas();
 
     subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
         const data = snapshot.val();
@@ -441,19 +438,17 @@ async function printSubscription(id) {
     printWindow.document.write(`<tr><td><strong>الإجمالي:</strong></td><td>${(sub.subscription.price + sub.deliveryPrice).toFixed(2)} د.ك</td></tr>`);
     printWindow.document.write('</table>');
 
-
     printWindow.document.write(`
-    <div class="terms-and-conditions">
-        <h2>الشروط والأحكام</h2>
-        <ul>
-            <li>المبلغ المدفوع لا يسترد.</li>
-            <li>يجب إبلاغنا عن أي تغيير في العنوان قبل 24 ساعة.</li>
-            <li>في حالة التوقف المؤقت للاشتراك، يجب الإبلاغ قبل 48 ساعة.</li>
-            <li>إذا تم إلغاء الاشتراك لأي سبب كان، لا يمكن استرجاع المبلغ.</li>
-        </ul>
-    </div>
-`);
-
+        <div class="terms-and-conditions">
+            <h2>الشروط والأحكام</h2>
+            <ul>
+                <li>المبلغ المدفوع لا يسترد.</li>
+                <li>يجب إبلاغنا عن أي تغيير في العنوان قبل 24 ساعة.</li>
+                <li>في حالة التوقف المؤقت للاشتراك، يجب الإبلاغ قبل 48 ساعة.</li>
+                <li>إذا تم إلغاء الاشتراك لأي سبب كان، لا يمكن استرجاع المبلغ.</li>
+            </ul>
+        </div>
+    `);
     
     if (sub.signatureImageUrl) {
         printWindow.document.write(`<div class="signature-container"><h3>توقيع العميل</h3><img src="${sub.signatureImageUrl}" class="signature-image"/></div>`);
