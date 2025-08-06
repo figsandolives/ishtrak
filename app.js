@@ -81,6 +81,7 @@ function setupFormPage() {
     let calculatedEndDate = '';
     let selectedPrice = 0;
 
+    // تهيئة الحقول المطلوبة عند التحميل الأولي
     document.querySelectorAll('#house-fields input[required]').forEach(input => input.setAttribute('required', 'required'));
     document.querySelectorAll('#apartment-fields input[required]').forEach(input => input.removeAttribute('required'));
 
@@ -181,6 +182,10 @@ function setupFormPage() {
         let daysToDeliver = periodLengths[period];
         
         const enabledDays = Array.from(deliveryDaysCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+        if (enabledDays.length === 0) {
+            endDateDisplay.textContent = 'يرجى اختيار أيام التوصيل.';
+            return;
+        }
 
         let currentDate = new Date(startDate);
         let daysCounted = 0;
@@ -202,12 +207,13 @@ function setupFormPage() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        // جمع البيانات
         const subscriptionData = {
             customerName: document.getElementById('customer-name').value,
             phoneNumber: phoneInput.value,
             address: { type: selectedAddressType },
             subscription: {
-                type: subscriptionsData[subTypeSelect.value].name,
+                type: subTypeSelect.value === '18' ? `اشتراك مخصص - ${document.getElementById('custom-sub-name').value}` : subscriptionsData[subTypeSelect.value].name,
                 period: subPeriodSelect.value,
                 price: selectedPrice
             },
@@ -296,6 +302,11 @@ function setupSignPage() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
+    // ربط حدث onBegin بعد تهيئة SignaturePad مباشرة
+    signaturePad.onBegin = () => {
+        approveBtn.disabled = false;
+    };
+
     subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -317,9 +328,6 @@ function setupSignPage() {
         }
     });
 
-    signaturePad.onBegin = () => {
-        approveBtn.disabled = false;
-    };
     
     clearBtn.addEventListener('click', () => {
         signaturePad.clear();
@@ -457,17 +465,25 @@ async function printSubscription(id) {
     printWindow.document.write('</div>');
 
     let imageUrls = [];
-    const subId = sub.subscription.type.split('-')[0].trim();
+    const subIdFromType = sub.subscription.type.split('-')[0].trim();
+    let subIdNumeric = '';
+    
+    // محاولة استخراج الرقم من بداية اسم الاشتراك
+    if (subIdFromType.match(/^\d+/)) {
+        subIdNumeric = subIdFromType.match(/^\d+/)[0];
+    }
+
     const period = sub.subscription.period;
     let copies = 0;
     if (period.includes('اسبوع') || period.includes('10أيام')) copies = 1;
     if (period.includes('2اسبوع') || period.includes('20يوم')) copies = 2;
     if (period.includes('4اسابيع') || period.includes('30يوم')) copies = 3;
 
-    if (subId === '18' && sub.subscription.customImageUrl) {
+    // معالجة الاشتراك المخصص (id=18)
+    if (subIdFromType === 'اشتراك مخصص' && sub.subscription.customImageUrl) {
         imageUrls.push(sub.subscription.customImageUrl);
-    } else if (subId >= 1 && subId <= 17) {
-        const imagePath = `a${subId}.jpg`;
+    } else if (subIdNumeric >= 1 && subIdNumeric <= 17) {
+        const imagePath = `a${subIdNumeric}.jpg`;
         imageUrls.push(`https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${encodeURIComponent(imagePath)}?alt=media`);
     }
 
