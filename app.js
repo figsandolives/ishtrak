@@ -277,10 +277,27 @@ function setupSignPage() {
     }
 
     const canvas = document.getElementById('signature-pad');
-    const signaturePad = new SignaturePad(canvas);
     const approveBtn = document.getElementById('approve-btn');
     const clearBtn = document.getElementById('clear-signature-btn');
     const summaryDiv = document.getElementById('subscription-summary');
+
+    // وظيفة لضبط حجم لوحة التوقيع
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear(); // مسح اللوحة بعد تغيير الحجم
+    }
+
+    // تهيئة لوحة التوقيع
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(248, 248, 248)'
+    });
+    
+    // ضبط الحجم عند تحميل الصفحة وعند تغيير حجم النافذة
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // استدعاء الوظيفة لأول مرة
 
     subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
         const data = snapshot.val();
@@ -424,7 +441,19 @@ async function printSubscription(id) {
     printWindow.document.write(`<tr><td><strong>الإجمالي:</strong></td><td>${(sub.subscription.price + sub.deliveryPrice).toFixed(2)} د.ك</td></tr>`);
     printWindow.document.write('</table>');
 
-    printWindow.document.write('<div class="terms-and-conditions"><h2>الشروط والأحكام</h2><ul><li>المبلغ المدفوع لا يسترد.</li><li>إذا تم إلغاء الاشتراك لأي سبب كان...</li></ul></div>');
+
+    printWindow.document.write(`
+    <div class="terms-and-conditions">
+        <h2>الشروط والأحكام</h2>
+        <ul>
+            <li>المبلغ المدفوع لا يسترد.</li>
+            <li>يجب إبلاغنا عن أي تغيير في العنوان قبل 24 ساعة.</li>
+            <li>في حالة التوقف المؤقت للاشتراك، يجب الإبلاغ قبل 48 ساعة.</li>
+            <li>إذا تم إلغاء الاشتراك لأي سبب كان، لا يمكن استرجاع المبلغ.</li>
+        </ul>
+    </div>
+`);
+
     
     if (sub.signatureImageUrl) {
         printWindow.document.write(`<div class="signature-container"><h3>توقيع العميل</h3><img src="${sub.signatureImageUrl}" class="signature-image"/></div>`);
