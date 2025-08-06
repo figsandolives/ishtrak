@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استمارات الاشتراكات</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>استمارات الاشتراكات</h1>
+        <button id="create-subscription-btn">إنشاء استمارة اشتراك جديدة</button>
+        <div id="subscriptions-list">
+            </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // هذا الكود يربط زر الإنشاء بصفحة form.html
+        document.getElementById('create-subscription-btn').addEventListener('click', () => {
+            window.location.href = 'form.html';
+        });
+    </script>
+
+    <script>
+    document.getElementById('create-subscription-btn').addEventListener('click', () => {
+        window.location.href = 'form.html';
+    });
+</script>
+
+</body>
+</html>
