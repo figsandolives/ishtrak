@@ -3,32 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>استمارة اشتراك</title>
+    <title>صفحة التوقيع</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        #signature-pad {
-            border: 2px solid #ccc;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #fff;
-            margin-bottom: 10px;
-        }
-        .signature-section button {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        #approve-btn {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            padding: 15px;
-            width: 100%;
-            font-size: 18px;
+        .signature-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin-top: 20px;
         }
-        #approve-btn:disabled {
+        canvas {
+            border: 2px solid #333;
+            border-radius: 5px;
+            cursor: crosshair;
+            background-color: #f8f8f8;
+            width: 100%;
+            max-width: 600px;
+            height: 200px;
+        }
+        .signature-buttons {
+            margin-top: 10px;
+        }
+        .signature-buttons button {
+            margin: 0 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
@@ -36,30 +37,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>استمارة اشتراك</h1>
+        <h1>اعتماد الاشتراك بالتوقيع</h1>
         <div id="subscription-summary">
             </div>
-
-        <div class="terms-and-conditions">
-            <h2>الشروط والأحكام</h2>
-            <ul>
-                <li>المبلغ المدفوع لا يسترد.</li>
-                <li>اذا تم الغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون او مطعم التين الطبيعي في أي وقت.</li>
-            </ul>
-        </div>
-
+        
         <div class="signature-section">
-            <p>يرجى التوقيع داخل المربع لاعتماد الاشتراك:</p>
-            <canvas id="signature-pad" width="400" height="200"></canvas>
-            <button id="clear-signature-btn">مسح التوقيع</button>
+            <canvas id="signature-pad" width="600" height="200"></canvas>
+            <div class="signature-buttons">
+                <button type="button" id="clear-signature-btn">مسح</button>
+                <button type="button" id="approve-btn" disabled>اعتمد</button>
+            </div>
         </div>
-
-        <button id="approve-btn" disabled>اعتمد</button>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
