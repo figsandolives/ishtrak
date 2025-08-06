@@ -301,11 +301,6 @@ function setupSignPage() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // ربط حدث onBegin بعد تهيئة SignaturePad مباشرة
-    signaturePad.onBegin = () => {
-        approveBtn.disabled = false;
-    };
-
     subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -330,7 +325,6 @@ function setupSignPage() {
     
     clearBtn.addEventListener('click', () => {
         signaturePad.clear();
-        approveBtn.disabled = true;
     });
 
     approveBtn.addEventListener('click', async () => {
