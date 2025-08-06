@@ -33,13 +33,30 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        .terms-and-conditions {
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+            margin-top: 30px;
+        }
+        .terms-and-conditions h2 {
+            text-align: center;
+        }
+        .terms-and-conditions ul {
+            list-style: none;
+            padding: 0;
+            text-align: right;
+        }
+        .terms-and-conditions li {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>اعتماد الاشتراك بالتوقيع</h1>
         <div id="subscription-summary">
-            </div>
+        </div>
         
         <div class="signature-section">
             <canvas id="signature-pad" width="600" height="200"></canvas>
@@ -47,6 +64,16 @@
                 <button type="button" id="clear-signature-btn">مسح</button>
                 <button type="button" id="approve-btn" disabled>اعتمد</button>
             </div>
+        </div>
+        
+        <div class="terms-and-conditions">
+            <h2>الشروط والأحكام</h2>
+            <ul>
+                <li>المبلغ المدفوع لا يسترد.</li>
+                <li>يجب إبلاغنا عن أي تغيير في العنوان قبل 24 ساعة.</li>
+                <li>في حالة التوقف المؤقت للاشتراك، يجب الإبلاغ قبل 48 ساعة.</li>
+                <li>إذا تم إلغاء الاشتراك لأي سبب كان، لا يمكن استرجاع المبلغ.</li>
+            </ul>
         </div>
     </div>
     
