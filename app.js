@@ -280,45 +280,43 @@ function setupSignPage() {
         window.location.href = 'index.html';
         return;
     }
-
-    const canvas = document.getElementById('signature-pad');
-    const approveBtn = document.getElementById('approve-btn');
-    const clearBtn = document.getElementById('clear-signature-btn');
-    const summaryDiv = document.getElementById('subscription-summary');
-    const mealPlanImageDiv = document.getElementById('meal-plan-image-container');
-
-    // جعل زر "اعتمد" غير مفعل بشكل افتراضي
-    approveBtn.disabled = true;
-
-    // تهيئة SignaturePad أولاً وقبل كل شيء
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(248, 248, 248)',
-        onEnd: () => {
-            // تفعيل زر "اعتمد" عند بدء التوقيع
-            approveBtn.disabled = signaturePad.isEmpty();
-        },
-        onBegin: () => {
-             // تفعيل زر "اعتمد" عند بدء التوقيع
-            approveBtn.disabled = false;
-        }
-    });
-
-    // وظيفة لضبط حجم لوحة التوقيع
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
-        if (!signaturePad.isEmpty()) {
-            signaturePad.clear();
-        }
-    }
     
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    subscriptionsRef.child(subscriptionId).once('value', async (snapshot) => {
+    // التحقق من حالة الاشتراك
+    subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
         const data = snapshot.val();
+        if (data && data.status === 'approved') {
+            document.body.innerHTML = `
+                <div class="container">
+                    <h1>تنبيه</h1>
+                    <p>هذه الاستمارة تم اعتمادها والتوقيع عليها مسبقاً.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const canvas = document.getElementById('signature-pad');
+        const approveBtn = document.getElementById('approve-btn');
+        const clearBtn = document.getElementById('clear-signature-btn');
+        const summaryDiv = document.getElementById('subscription-summary');
+        const mealPlanImageDiv = document.getElementById('meal-plan-image-container');
+
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(248, 248, 248)',
+        });
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            if (!signaturePad.isEmpty()) {
+                signaturePad.clear();
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
         if (data) {
             const totalPrice = (data.subscription.price || 0) + (data.deliveryPrice || 0);
             const deliveryStatus = data.deliveryPrice > 0 ? `${data.deliveryPrice.toFixed(2)} د.ك` : 'مجاني';
@@ -334,7 +332,6 @@ function setupSignPage() {
                 <p><strong>وقت التوصيل:</strong> ${data.deliveryTime || 'لم يحدد'}</p>
             `;
 
-            // عرض جدول الوجبات
             let imageUrl = '';
             const subIdMatch = data.subscription.type.match(/^اشتراك مخصص/i) ? '18' : data.subscription.type.match(/\d+/);
             const subId = subIdMatch ? subIdMatch[0] : null;
@@ -353,45 +350,43 @@ function setupSignPage() {
 
         } else {
             summaryDiv.innerHTML = '<p>الاشتراك غير موجود أو تم حذفه.</p>';
-            approveBtn.disabled = true;
-        }
-    });
-    
-    clearBtn.addEventListener('click', () => {
-        signaturePad.clear();
-        approveBtn.disabled = true;
-    });
-
-    approveBtn.addEventListener('click', async () => {
-        if (signaturePad.isEmpty()) {
-            alert('يرجى التوقيع أولاً.');
-            approveBtn.disabled = true;
-            return;
         }
         
-        approveBtn.disabled = true;
-        const signatureDataUrl = signaturePad.toDataURL();
-        
-        try {
-            const storageRef = storage.ref(`signatures/${subscriptionId}`);
-            await storageRef.putString(signatureDataUrl, 'data_url');
-            const signatureUrl = await storageRef.getDownloadURL();
+        clearBtn.addEventListener('click', () => {
+            signaturePad.clear();
+        });
 
-            await subscriptionsRef.child(subscriptionId).update({
-                status: 'approved',
-                signatureImageUrl: signatureUrl
-            });
+        approveBtn.addEventListener('click', async () => {
+            if (signaturePad.isEmpty()) {
+                alert('يرجى التوقيع أولاً.');
+                return;
+            }
             
-            alert('شكرا لثقتكم.. تم اعتماد الاشتراك، يرجى المتابعة مع الموظف للدفع');
-            window.close();
+            approveBtn.disabled = true;
+            const signatureDataUrl = signaturePad.toDataURL();
             
-        } catch (error) {
-            console.error('حدث خطأ في الاعتماد:', error);
-            alert('حدث خطأ أثناء الاعتماد. يرجى المحاولة مرة أخرى.');
-            approveBtn.disabled = false;
-        }
+            try {
+                const storageRef = storage.ref(`signatures/${subscriptionId}`);
+                await storageRef.putString(signatureDataUrl, 'data_url');
+                const signatureUrl = await storageRef.getDownloadURL();
+
+                await subscriptionsRef.child(subscriptionId).update({
+                    status: 'approved',
+                    signatureImageUrl: signatureUrl
+                });
+                
+                alert('شكرا لثقتكم.. تم اعتماد الاشتراك، يرجى المتابعة مع الموظف للدفع');
+                window.close();
+                
+            } catch (error) {
+                console.error('حدث خطأ في الاعتماد:', error);
+                alert('حدث خطأ أثناء الاعتماد. يرجى المحاولة مرة أخرى.');
+                approveBtn.disabled = false;
+            }
+        });
     });
 }
+
 
 function setupIndexPage() {
     const listDiv = document.getElementById('subscriptions-list');
