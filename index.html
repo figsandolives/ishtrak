@@ -1,33 +1,1141 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>استمارات الاشتراكات</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>استمارات الاشتراكات</h1>
-        <button id="create-subscription-btn">إنشاء استمارة اشتراك جديدة</button>
-        <div id="subscriptions-list">
-            </div>
-    </div>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="app.js"></script>
-    <script>
-        // هذا الكود يربط زر الإنشاء بصفحة form.html
-        document.getElementById('create-subscription-btn').addEventListener('click', () => {
-            window.location.href = 'form.html';
-        });
+    <title>نظام إدارة الاشتراكات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        window.firebase = {
+            initializeApp,
+            getAuth,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            signInAnonymously,
+            getFirestore,
+            doc,
+            setDoc,
+            collection,
+            query,
+            onSnapshot,
+            deleteDoc,
+            getDoc
+        };
     </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for the signature canvas */
+        .signature-canvas {
+            touch-action: none;
+        }
+    </style>
+</head>
+<body dir="rtl">
+    <div id="root"></div>
 
-    <script>
-    document.getElementById('create-subscription-btn').addEventListener('click', () => {
-        window.location.href = 'form.html';
-    });
-</script>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { initializeApp, getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously, getFirestore, doc, setDoc, collection, query, onSnapshot, deleteDoc, getDoc } = window.firebase;
+        const { jsPDF } = window.jspdf;
 
+        // يتم توفير هذه المتغيرات بشكل تلقائي في بيئة Immersive
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+
+        const subscriptionsData = [
+            { id: 1, name: 'اشتراك إنقاص الوزن النباتي', prices: { 'اسبوع': 87.5, '٢اسبوع': 120, '٤اسابيع': 240 }, image: 'a1.jpg' },
+            { id: 2, name: 'اشتراك إنقاص الوزن', prices: { 'اسبوع': 93.5, '٢اسبوع': 130, '٤اسابيع': 250 }, image: 'a2.jpg' },
+            { id: 3, name: 'اشتراك خاص لرفع المناعة', prices: { 'اسبوع': 95, '٢اسبوع': 145, '٤اسابيع': 280 }, image: 'a3.jpg' },
+            { id: 4, name: 'اشتراك نظام الكيتو', prices: { 'اسبوع': 95, '٢اسبوع': 140, '٤اسابيع': 280 }, image: 'a4.jpg' },
+            { id: 5, name: 'اشتراك خالي من الجلوتين', prices: { 'اسبوع': 93.5, '٢اسبوع': 130, '٤اسابيع': 260 }, image: 'a5.jpg' },
+            { id: 6, name: 'اشتراك خالي من الجلوتين ومنتجات الألبان', prices: { 'اسبوع': 91.5, '٢اسبوع': 128.5, '٤اسابيع': 255 }, image: 'a6.jpg' },
+            { id: 7, name: 'اشتراك التخلص من الالتهابات في الجسم بالصيام المتقطع', prices: { '١٠ أيام': 120, '٢٠يوم': 200, '٣٠يوم': 290 }, image: 'a7.jpg' },
+            { id: 8, name: 'اشتراك التخلص من الإلتهابات بدون صيام', prices: { '١٠ أيام': 130, '٢٠يوم': 210, '٣٠يوم': 300 }, image: 'a8.jpg' },
+            { id: 9, name: 'اشتراك رمضان', prices: { 'اسبوع': 90, '٢اسبوع': 140, '٤اسابيع': 240 }, image: 'a9.jpg' },
+            { id: 10, name: 'اشتراك رمضان النباتي', prices: { 'اسبوع': 80, '٢اسبوع': 130, '٤اسابيع': 230 }, image: 'a10.jpg' },
+            { id: 11, name: 'اشتراك رفع نسب امتصاص الفيتامينت والمعادن', prices: { 'اسبوع': 93.5, '٢اسبوع': 130, '٤اسابيع': 250 }, image: 'a11.jpg' },
+            { id: 12, name: 'اشتراك خاص للنساء المرضعات', prices: { 'اسبوع': 93.5, '٢اسبوع': 130, '٤اسابيع': 260 }, image: 'a12.jpg' },
+            { id: 13, name: 'اشتراك ضد أنواع الحساسيات الشائعة', prices: { 'اسبوع': 96.5, '٢اسبوع': 133.5, '٤اسابيع': 260 }, image: 'a13.jpg' },
+            { id: 14, name: 'اشتراك خاص للرياضيين', prices: { '١٠ أيام': 120, '٢٠يوم': 180, '٣٠يوم': 230 }, image: 'a14.jpg' },
+            { id: 15, name: 'اسلوب الحياة الصحية', prices: { '١٠ أيام': 120, '٢٠يوم': 180, '٣٠يوم': 230 }, image: 'a15.jpg' },
+            { id: 16, name: 'اشتراك الأخصائية ريم العنزي', prices: { '١٠ أيام': 150, '٢٠يوم': 200, '٣٠يوم': 230 }, image: 'a16.jpg' },
+            { id: 17, name: 'اشتراك ريوق المستشفى', prices: { 'اسبوع': 50, '٢اسبوع': 80, '٤اسابيع': 120 }, image: 'a17.jpg' },
+            { id: 18, name: 'اشتراك مخصص', prices: { 'اسبوع': 0, '٢اسبوع': 0, '٤اسابيع': 0, '١٠ أيام': 0, '٢٠يوم': 0, '٣٠يوم': 0 }, image: null },
+        ];
+
+        // دالة مساعدة لتحويل الأرقام العربية إلى الإنجليزية
+        const convertArabicToEnglish = (str) => {
+            const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            const englishNumerals = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            return str.split('').map(char => {
+                const index = arabicNumerals.indexOf(char);
+                return index !== -1 ? englishNumerals[index] : char;
+            }).join('');
+        };
+
+        // دالة مساعدة لتنسيق التاريخ ليشمل يوم الأسبوع باللغة العربية
+        const formatDateWithDay = (dateString) => {
+            if (!dateString) return 'غير محدد';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return 'تاريخ غير صالح';
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('ar-SA', options);
+        };
+
+        // دالة مساعدة لاستبدال نافذة `window.alert` بنافذة منبثقة مخصصة
+        const CustomAlert = ({ message, onClose }) => (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-2xl p-6 shadow-2xl text-center max-w-sm w-full">
+                    <p className="text-gray-800 text-lg">{message}</p>
+                    <button
+                        onClick={onClose}
+                        className="mt-4 bg-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300"
+                    >
+                        حسناً
+                    </button>
+                </div>
+            </div>
+        );
+
+        // هوك مخصص لتحليل متغيرات البحث في الـ URL
+        const useSearchParams = () => {
+            const [params, setParams] = useState({});
+            useEffect(() => {
+                const search = window.location.search;
+                if (search) {
+                    const urlParams = new URLSearchParams(search);
+                    const newParams = {};
+                    for (const [key, value] of urlParams.entries()) {
+                        newParams[key] = value;
+                    }
+                    setParams(newParams);
+                }
+            }, []);
+            return params;
+        };
+
+        const App = () => {
+            const [db, setDb] = useState(null);
+            const [authReady, setAuthReady] = useState(false);
+            const [userId, setUserId] = useState('');
+            const [view, setView] = useState('dashboard'); // 'dashboard', 'createForm', 'signaturePage'
+            const params = useSearchParams();
+
+            useEffect(() => {
+                // التحقق مما إذا كانت إعدادات Firebase متاحة قبل التهيئة
+                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
+                    console.error('Firebase configuration is missing. Cannot initialize.');
+                    setAuthReady(true); // الإشارة إلى أن عملية المصادقة قد انتهت، ولكنها فشلت
+                    return;
+                }
+                
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    const firestoreDb = getFirestore(app);
+                    const firebaseAuth = getAuth(app);
+                    setDb(firestoreDb);
+                    
+                    const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+                        if (user) {
+                            // المستخدم مسجل الدخول بالفعل (أو قام بتسجيل الدخول للتو)
+                            setUserId(user.uid);
+                            setAuthReady(true);
+                        } else {
+                            // لم يقم أي مستخدم بتسجيل الدخول، لذلك نقوم بتسجيل الدخول الآن
+                            try {
+                                if (initialAuthToken) {
+                                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                                } else {
+                                    await signInAnonymously(firebaseAuth);
+                                }
+                            } catch (error) {
+                                console.error('Firebase sign-in failed:', error);
+                                setAuthReady(true);
+                            }
+                        }
+                    });
+                    return () => unsubscribe();
+                } catch (error) {
+                    console.error('Failed to initialize Firebase:', error);
+                    setAuthReady(true); // لا يزال يتم تعيين authReady إلى true لعرض رسالة خطأ في الواجهة
+                }
+            }, []);
+
+            useEffect(() => {
+                // التحقق من متغيرات URL للتبديل إلى صفحة التوقيع
+                if (params.docId && params.view === 'signature') {
+                    setView('signaturePage');
+                }
+            }, [params]);
+
+            return (
+                <div className="bg-gray-50 min-h-screen p-8 font-sans text-right">
+                    <nav className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900">نظام إدارة الاشتراكات</h1>
+                        {authReady && (
+                            <div className="flex items-center space-x-4">
+                                {view === 'dashboard' && (
+                                    <button
+                                        onClick={() => setView('createForm')}
+                                        className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300"
+                                    >
+                                        انشاء استمارة اشتراك جديدة
+                                    </button>
+                                )}
+                                {view !== 'dashboard' && (
+                                    <button
+                                        onClick={() => setView('dashboard')}
+                                        className="bg-gray-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg hover:bg-gray-700 transition-colors duration-300"
+                                    >
+                                        العودة للوحة التحكم
+                                    </button>
+                                )}
+                                <span className="text-sm text-gray-500">معرف المستخدم: <span className="text-gray-800 font-mono text-xs">{userId}</span></span>
+                            </div>
+                        )}
+                    </nav>
+                    <hr className="my-8 border-gray-300" />
+                    {view === 'dashboard' && authReady && <EmployeeDashboard db={db} authReady={authReady} userId={userId} />}
+                    {view === 'createForm' && authReady && <CreateForm db={db} authReady={authReady} userId={userId} />}
+                    {view === 'signaturePage' && authReady && <SignaturePage db={db} authReady={authReady} params={params} />}
+                    {!authReady && <div className="text-center text-xl text-gray-500">جاري تحميل النظام...</div>}
+                </div>
+            );
+        };
+
+        const EmployeeDashboard = ({ db, authReady, userId }) => {
+            const [subscriptions, setSubscriptions] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showDeleteModal, setShowDeleteModal] = useState(false);
+            const [subscriptionToDelete, setSubscriptionToDelete] = useState(null);
+            const [showPrintModal, setShowPrintModal] = useState(false);
+            const [subscriptionToPrint, setSubscriptionToPrint] = useState(null);
+            const [showSuccessModal, setShowSuccessModal] = useState(false);
+            const [successMessage, setSuccessMessage] = useState('');
+            const [showErrorModal, setShowErrorModal] = useState(false);
+            const [errorMessage, setErrorMessage] = useState('');
+
+            const showAlert = (message, type = 'success') => {
+                if (type === 'success') {
+                    setSuccessMessage(message);
+                    setShowSuccessModal(true);
+                } else {
+                    setErrorMessage(message);
+                    setShowErrorModal(true);
+                }
+            };
+            
+            // --- جلب بيانات Firestore مع مستمع في الوقت الفعلي ---
+            useEffect(() => {
+                if (!authReady || !db || !userId) return;
+                
+                const q = query(collection(db, `/artifacts/${appId}/users/${userId}/subscriptions`));
+                
+                const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                    const subscriptionsData = [];
+                    querySnapshot.forEach((doc) => {
+                        subscriptionsData.push({ id: doc.id, ...doc.data() });
+                    });
+                    setSubscriptions(subscriptionsData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error('Error fetching subscriptions:', error);
+                    setLoading(false);
+                    showAlert('حدث خطأ أثناء جلب الاشتراكات.', 'error');
+                });
+
+                return () => unsubscribe();
+            }, [db, authReady, userId]);
+
+            // دالة للتعامل مع الحذف
+            const handleDelete = async () => {
+                if (!authReady || !db || !subscriptionToDelete || !userId) return;
+                try {
+                    await deleteDoc(doc(db, `/artifacts/${appId}/users/${userId}/subscriptions`, subscriptionToDelete.id));
+                    setShowDeleteModal(false);
+                    showAlert('تم حذف الاشتراك بنجاح.');
+                } catch (e) {
+                    console.error('Error deleting document:', e);
+                    showAlert('حدث خطأ أثناء حذف الاشتراك.', 'error');
+                }
+            };
+
+            const openDeleteModal = (subscription) => {
+                setSubscriptionToDelete(subscription);
+                setShowDeleteModal(true);
+            };
+
+            const openPrintModal = (subscription) => {
+                setSubscriptionToPrint(subscription);
+                setShowPrintModal(true);
+            };
+
+            if (loading) {
+                return <div className="text-center text-lg text-gray-500">جاري تحميل البيانات...</div>;
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">استمارات الاشتراكات المعتمدة</h2>
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {subscriptions.length > 0 ? (
+                            subscriptions.map((sub) => (
+                                <div key={sub.id} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-blue-700 mb-2">{sub.customerName}</h3>
+                                        <p className="text-gray-600 mb-1"><strong>رقم الهاتف:</strong> {sub.customerPhone}</p>
+                                        <p className="text-gray-600 mb-1"><strong>نوع الاشتراك:</strong> {sub.subscriptionName}</p>
+                                        <p className="text-gray-600 mb-1"><strong>الفترة:</strong> {sub.subscriptionDuration}</p>
+                                        <p className="text-gray-600 mb-1"><strong>الإجمالي:</strong> {sub.total} د.ك</p>
+                                        <p className="text-gray-600 text-sm mb-4"><strong>تاريخ الاعتماد:</strong> {new Date(sub.timestamp).toLocaleString('ar-SA')}</p>
+                                    </div>
+                                    <div className="flex space-x-2 mt-4 justify-end">
+                                        <button
+                                            onClick={() => showAlert('وظيفة التعديل غير مفعلة في هذا المثال.')}
+                                            className="bg-yellow-100 text-yellow-700 font-semibold py-2 px-4 rounded-full text-sm hover:bg-yellow-200 transition-colors"
+                                        >
+                                            تعديل
+                                        </button>
+                                        <button
+                                            onClick={() => openPrintModal(sub)}
+                                            className="bg-blue-100 text-blue-700 font-semibold py-2 px-4 rounded-full text-sm hover:bg-blue-200 transition-colors"
+                                        >
+                                            طباعة
+                                        </button>
+                                        <button
+                                            onClick={() => openDeleteModal(sub)}
+                                            className="bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-full text-sm hover:bg-red-200 transition-colors"
+                                        >
+                                            حذف
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="md:col-span-2 lg:col-span-3 xl:col-span-4 text-center text-xl text-gray-500 p-10">
+                                لا توجد اشتراكات معتمدة حالياً.
+                            </div>
+                        )}
+                    </div>
+
+                    {showDeleteModal && (
+                        <CustomAlert
+                            message={`هل أنت متأكد من حذف اشتراك ${subscriptionToDelete?.customerName}?`}
+                            onClose={() => {
+                                handleDelete();
+                                setShowDeleteModal(false);
+                            }}
+                        />
+                    )}
+                    
+                    {showPrintModal && (
+                        <PrintModal
+                            subscription={subscriptionToPrint}
+                            onClose={() => setShowPrintModal(false)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // --- مكون نموذج الإنشاء (CreateForm) ---
+        const CreateForm = ({ db, authReady, userId }) => {
+            const [formData, setFormData] = useState({
+                customerName: '',
+                customerPhone: '',
+                addressType: 'بيت',
+                address: {
+                    area: '', block: '', street: '', avenue: '', houseNo: '', buildingNo: '', floor: '', apartmentNo: '', neighboring: ''
+                },
+                subscriptionId: null,
+                subscriptionName: '',
+                subscriptionDuration: '',
+                subscriptionPrice: 0,
+                deliveryPrice: 0,
+                startDate: '',
+                skippedDays: {
+                    'الأحد': false, 'الاثنين': false, 'الثلاثاء': false, 'الأربعاء': false, 'الخميس': false, 'الجمعة': false, 'السبت': false
+                },
+                deliveryTime: '',
+                customImage: null,
+            });
+            const [showImageModal, setShowImageModal] = useState(false);
+            const [modalImageUrl, setModalImageUrl] = useState('');
+            const [showValidationModal, setShowValidationModal] = useState(false);
+            const [validationMessage, setValidationMessage] = useState('');
+            const [showSuccessModal, setShowSuccessModal] = useState(false);
+            const [successMessage, setSuccessMessage] = useState('');
+
+            const showAlert = (message, type = 'success') => {
+                if (type === 'success') {
+                    setSuccessMessage(message);
+                    setShowSuccessModal(true);
+                } else {
+                    setValidationMessage(message);
+                    setShowValidationModal(true);
+                }
+            };
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                if (name === 'customerPhone') {
+                    const englishValue = convertArabicToEnglish(value);
+                    setFormData({ ...formData, [name]: englishValue });
+                } else {
+                    setFormData({ ...formData, [name]: value });
+                }
+            };
+
+            const handleAddressChange = (e) => {
+                const { name, value } = e.target;
+                setFormData({
+                    ...formData,
+                    address: { ...formData.address, [name]: value }
+                });
+            };
+
+            const handleSubscriptionSelect = (sub) => {
+                setFormData({
+                    ...formData,
+                    subscriptionId: sub.id,
+                    subscriptionName: sub.name,
+                    subscriptionDuration: '',
+                    subscriptionPrice: 0,
+                    customImage: null, // إعادة تعيين الصورة المخصصة عند تغيير نوع الاشتراك
+                });
+            };
+
+            const handleDurationSelect = (duration, price) => {
+                setFormData({
+                    ...formData,
+                    subscriptionDuration: duration,
+                    subscriptionPrice: price
+                });
+            };
+
+            const handleCustomImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setFormData({ ...formData, customImage: reader.result });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const openImageModal = (image) => {
+                setModalImageUrl(image);
+                setShowImageModal(true);
+            };
+
+            const calculateEndDate = () => {
+                if (!formData.startDate || !formData.subscriptionDuration) return 'N/A';
+                const durationMap = {
+                    'اسبوع': 7, '٢اسبوع': 14, '٤اسابيع': 28, '١٠ أيام': 10, '٢٠يوم': 20, '٣٠يوم': 30
+                };
+                const deliveryDaysCount = durationMap[formData.subscriptionDuration] || 0;
+                if (deliveryDaysCount === 0) return 'N/A';
+
+                let currentDate = new Date(formData.startDate);
+                let daysCounter = 0;
+                const weekdays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+                while (daysCounter < deliveryDaysCount) {
+                    const dayName = weekdays[currentDate.getDay()];
+                    if (!formData.skippedDays[dayName]) {
+                        daysCounter++;
+                    }
+                    if (daysCounter < deliveryDaysCount) {
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                }
+                return currentDate.toISOString().slice(0, 10);
+            };
+
+            const validateForm = () => {
+                const requiredFields = ['customerName', 'customerPhone', 'subscriptionId', 'subscriptionDuration', 'deliveryTime', 'startDate'];
+                for (const field of requiredFields) {
+                    if (!formData[field] || (typeof formData[field] === 'string' && formData[field].trim() === '')) {
+                        setValidationMessage('الرجاء تعبئة جميع الحقول المطلوبة.');
+                        return false;
+                    }
+                }
+                // التحقق الخاص للاشتراك المخصص
+                if (formData.subscriptionId === 18 && formData.subscriptionPrice === 0) {
+                    setValidationMessage('يجب تحديد سعر للاشتراك المخصص.');
+                    return false;
+                }
+                return true;
+            };
+
+            // دالة للتعامل مع إرسال رابط التوقيع
+            const handleSendToSignature = async () => {
+                if (!validateForm()) {
+                    setShowValidationModal(true);
+                    return;
+                }
+
+                // حفظ بيانات النموذج في Firestore أولاً
+                if (!authReady || !db || !userId) return;
+                try {
+                    const formPayload = {
+                        ...formData,
+                        total: formData.subscriptionPrice + parseFloat(formData.deliveryPrice || 0),
+                        endDate: calculateEndDate(),
+                        timestamp: new Date().toISOString(),
+                        status: 'pending-signature'
+                    };
+
+                    const docRef = doc(collection(db, `/artifacts/${appId}/users/${userId}/pending_subscriptions`));
+                    await setDoc(docRef, formPayload);
+
+                    // --- رابط التوقيع المحدث لاستخدام URL الخاص بالمستخدم ---
+                    const signatureLink = `https://figsandolives.github.io/ishtrak/?view=signature&docId=${docRef.id}&userId=${userId}`;
+                    const whatsappMessage = `مضمون الرسالة:\nتم تعبئة بيانات استمارة الاشتراك بنجاح،\nيرجى الضغط على الرابط التالي للاعتماد والتوقيع:\n${signatureLink}`;
+                    
+                    const phoneNumber = convertArabicToEnglish(formData.customerPhone);
+                    const whatsappURL = `https://wa.me/965${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+                    window.open(whatsappURL, '_blank');
+                    
+                    showAlert('تم إرسال الرابط إلى العميل عبر واتساب.');
+
+                    // مسح النموذج بعد الإرسال
+                    setFormData({
+                        customerName: '', customerPhone: '', addressType: 'بيت', address: { area: '', block: '', street: '', avenue: '', houseNo: '', buildingNo: '', floor: '', apartmentNo: '', neighboring: '' },
+                        subscriptionId: null, subscriptionName: '', subscriptionDuration: '', subscriptionPrice: 0, deliveryPrice: 0, startDate: '',
+                        skippedDays: { 'الأحد': false, 'الاثنين': false, 'الثلاثاء': false, 'الأربعاء': false, 'الخميس': false, 'الجمعة': false, 'السبت': false },
+                        deliveryTime: '', customImage: null,
+                    });
+
+                } catch (e) {
+                    console.error('Error saving form data:', e);
+                    showAlert('حدث خطأ أثناء حفظ بيانات النموذج.', 'error');
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-200">
+                    <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">إنشاء استمارة اشتراك جديدة</h2>
+                    
+                    {/* قسم بيانات العميل */}
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold text-blue-700 mb-4">بيانات العميل</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input
+                                type="text"
+                                name="customerName"
+                                placeholder="اسم الزبون"
+                                value={formData.customerName}
+                                onChange={handleInputChange}
+                                className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="text"
+                                name="customerPhone"
+                                placeholder="رقم الهاتف (965+)"
+                                value={formData.customerPhone}
+                                onChange={handleInputChange}
+                                className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold text-blue-700 mb-4">العنوان</h3>
+                        <div className="flex space-x-4 mb-4">
+                            <button
+                                onClick={() => setFormData({ ...formData, addressType: 'بيت' })}
+                                className={`flex-1 p-3 rounded-lg font-semibold transition-colors ${formData.addressType === 'بيت' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                            >
+                                بيت
+                            </button>
+                            <button
+                                onClick={() => setFormData({ ...formData, addressType: 'شقة' })}
+                                className={`flex-1 p-3 rounded-lg font-semibold transition-colors ${formData.addressType === 'شقة' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                            >
+                                شقة
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" name="area" placeholder="المنطقة" value={formData.address.area} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                            <input type="text" name="block" placeholder="القطعة" value={formData.address.block} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                            <input type="text" name="street" placeholder="الشارع" value={formData.address.street} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                            <input type="text" name="avenue" placeholder="الجادة (اختياري)" value={formData.address.avenue} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                            {formData.addressType === 'بيت' ? (
+                                <>
+                                    <input type="text" name="houseNo" placeholder="رقم المنزل" value={formData.address.houseNo} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="neighboring" placeholder="مبنى مجاور؟ (اختياري)" value={formData.address.neighboring} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                </>
+                            ) : (
+                                <>
+                                    <input type="text" name="buildingNo" placeholder="رقم/اسم البناية" value={formData.address.buildingNo} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="floor" placeholder="الطابق" value={formData.address.floor} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="apartmentNo" placeholder="الشقة" value={formData.address.apartmentNo} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                    <input type="text" name="neighboring" placeholder="مبنى مجاور؟ (اختياري)" value={formData.address.neighboring} onChange={handleAddressChange} className="p-3 border border-gray-300 rounded-lg" />
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold text-blue-700 mb-4">اختيار نوع الاشتراك</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {subscriptionsData.map((sub) => (
+                                <div
+                                    key={sub.id}
+                                    onClick={() => handleSubscriptionSelect(sub)}
+                                    className={`p-4 rounded-lg shadow-md cursor-pointer transition-all duration-200 hover:shadow-lg ${formData.subscriptionId === sub.id ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-100 border-2 border-transparent'}`}
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-semibold text-gray-800">{sub.name}</span>
+                                        {sub.image && (
+                                            <button onClick={(e) => { e.stopPropagation(); openImageModal(`https://placehold.co/800x600/E5E7EB/1F2937?text=${sub.name}`); }} className="text-blue-500 hover:text-blue-700">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 4-4z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                    {formData.subscriptionId === sub.id && (
+                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                            {sub.id !== 18 ? (
+                                                Object.entries(sub.prices).map(([duration, price]) => (
+                                                    <button
+                                                        key={duration}
+                                                        onClick={(e) => { e.stopPropagation(); handleDurationSelect(duration, price); }}
+                                                        className={`p-2 rounded-lg text-sm font-medium transition-colors ${formData.subscriptionDuration === duration ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+                                                    >
+                                                        {duration}: {price} د.ك
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-2 space-y-2">
+                                                   <p className="text-gray-600 text-sm">اشتراك مخصص: حدد الفترة والسعر</p>
+                                                   <select
+                                                     name="customDuration"
+                                                     value={formData.subscriptionDuration}
+                                                     onChange={(e) => handleDurationSelect(e.target.value, formData.subscriptionPrice)}
+                                                     className="p-2 border border-gray-300 rounded-lg w-full"
+                                                   >
+                                                     <option value="">اختر الفترة</option>
+                                                     <option value="اسبوع">اسبوع</option>
+                                                     <option value="٢اسبوع">٢ اسبوع</option>
+                                                     <option value="٤اسابيع">٤ اسابيع</option>
+                                                     <option value="١٠ أيام">١٠ ايام</option>
+                                                     <option value="٢٠يوم">٢٠ يوم</option>
+                                                     <option value="٣٠يوم">٣٠ يوم</option>
+                                                   </select>
+                                                   <input
+                                                     type="number"
+                                                     name="subscriptionPrice"
+                                                     placeholder="سعر الاشتراك د.ك"
+                                                     value={formData.subscriptionPrice === 0 ? '' : formData.subscriptionPrice}
+                                                     onChange={(e) => setFormData({ ...formData, subscriptionPrice: parseFloat(e.target.value) || 0 })}
+                                                     className="p-2 border border-gray-300 rounded-lg w-full"
+                                                   />
+                                                   <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleCustomImageUpload}
+                                                    className="p-2 w-full"
+                                                   />
+                                                   {formData.customImage && (
+                                                     <div className="mt-2">
+                                                       <p className="text-sm text-gray-600">تم رفع الصورة بنجاح.</p>
+                                                       <button onClick={(e) => {e.stopPropagation(); openImageModal(formData.customImage);}} className="text-blue-500 underline">عرض الصورة</button>
+                                                     </div>
+                                                   )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold text-blue-700 mb-4">جدول وتفاصيل التوصيل</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="flex flex-col">
+                                <label className="mb-2 text-gray-700 font-medium">يوم بدء الاشتراك</label>
+                                <input
+                                    type="date"
+                                    name="startDate"
+                                    value={formData.startDate}
+                                    onChange={handleInputChange}
+                                    className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <p className="mt-2 text-gray-600 text-sm">{formatDateWithDay(formData.startDate)}</p>
+                            </div>
+                            <div className="flex flex-col">
+                                <label className="mb-2 text-gray-700 font-medium">يوم انتهاء الاشتراك</label>
+                                <input
+                                    type="text"
+                                    value={calculateEndDate()}
+                                    disabled
+                                    className="p-3 border border-gray-300 bg-gray-100 rounded-lg"
+                                />
+                                <p className="mt-2 text-gray-600 text-sm">{formatDateWithDay(calculateEndDate())}</p>
+                            </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                            <label className="mb-2 text-gray-700 font-medium">الأيام التي لا يريد فيها استلام وجبات:</label>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                                {Object.keys(formData.skippedDays).map((day) => (
+                                    <label key={day} className="flex items-center space-x-2 bg-gray-100 p-3 rounded-lg cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.skippedDays[day]}
+                                            onChange={(e) => setFormData({ ...formData, skippedDays: { ...formData.skippedDays, [day]: e.target.checked } })}
+                                            className="rounded text-blue-600"
+                                        />
+                                        <span>{day}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-col mb-4">
+                            <label className="mb-2 text-gray-700 font-medium">وقت التوصيل</label>
+                            <select
+                                name="deliveryTime"
+                                value={formData.deliveryTime}
+                                onChange={handleInputChange}
+                                className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="">اختر وقت التوصيل</option>
+                                <option value="9AM-12PM">من ٩ص الى ١٢ظ</option>
+                                <option value="12PM-3PM">من ١٢ظ الى ٣م</option>
+                                <option value="3PM-6PM">من ٣م الى ٦م</option>
+                                <option value="6PM-9PM">من ٦م الى ٩م</option>
+                            </select>
+                        </div>
+                        
+                        <div className="flex flex-col mb-4">
+                            <label className="mb-2 text-gray-700 font-medium">سعر التوصيل (د.ك)</label>
+                            <input
+                                type="number"
+                                name="deliveryPrice"
+                                placeholder="سعر التوصيل (إذا كان 0 فهو مجاني)"
+                                value={formData.deliveryPrice}
+                                onChange={handleInputChange}
+                                className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-100 p-4 rounded-xl shadow-inner mb-8">
+                        <p className="font-bold text-xl text-blue-800">الإجمالي:</p>
+                        <p className="text-2xl font-extrabold text-blue-900 mt-1">
+                            {formData.subscriptionPrice + parseFloat(formData.deliveryPrice || 0)} د.ك
+                        </p>
+                    </div>
+
+                    <div className="mt-8">
+                        <button
+                            onClick={handleSendToSignature}
+                            className="w-full py-4 text-xl font-bold rounded-full transition-all duration-300 bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 hover:shadow-xl"
+                        >
+                            ارسال للتوقيع
+                        </button>
+                    </div>
+
+                    {showImageModal && (
+                        <ImageModal imageUrl={modalImageUrl} onClose={() => setShowImageModal(false)} />
+                    )}
+
+                    {showValidationModal && (
+                        <CustomAlert message={validationMessage} onClose={() => setShowValidationModal(false)} />
+                    )}
+                </div>
+            );
+        };
+
+        // --- مكون صفحة التوقيع (عرض العميل) ---
+        const SignaturePage = ({ db, authReady, params }) => {
+            const [subscriptionData, setSubscriptionData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [signatureData, setSignatureData] = useState(null);
+            const [showModal, setShowModal] = useState(false);
+            const [isSigned, setIsSigned] = useState(false);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                // جلب البيانات لصفحة التوقيع
+                const fetchSubscriptionData = async () => {
+                    if (!authReady || !db || !params.docId) {
+                        setLoading(false);
+                        return;
+                    }
+                    try {
+                        // إنشاء مسار المستند باستخدام معرف المستخدم من متغيرات URL
+                        const docRef = doc(db, `/artifacts/${appId}/users/${params.userId}/pending_subscriptions`, params.docId);
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            setSubscriptionData(docSnap.data());
+                        } else {
+                            console.log("No such document!");
+                        }
+                    } catch (e) {
+                        console.error('Error fetching subscription data:', e);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchSubscriptionData();
+            }, [db, authReady, params]);
+
+            // --- منطق لوحة التوقيع ---
+            useEffect(() => {
+                if (!canvasRef.current) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#000';
+
+                let isDrawing = false;
+                let lastX = 0;
+                let lastY = 0;
+
+                const startDrawing = (e) => {
+                    isDrawing = true;
+                    setIsSigned(true);
+                    const coords = getCoordinates(e, canvas);
+                    lastX = coords[0];
+                    lastY = coords[1];
+                };
+
+                const draw = (e) => {
+                    if (!isDrawing) return;
+                    e.preventDefault();
+                    const [currentX, currentY] = getCoordinates(e, canvas);
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(currentX, currentY);
+                    ctx.stroke();
+                    lastX = currentX;
+                    lastY = currentY;
+                };
+
+                const stopDrawing = () => {
+                    isDrawing = false;
+                    setSignatureData(canvas.toDataURL('image/png'));
+                };
+
+                const getCoordinates = (e, canvas) => {
+                    const rect = canvas.getBoundingClientRect();
+                    let clientX, clientY;
+                    if (e.touches) {
+                        clientX = e.touches[0].clientX;
+                        clientY = e.touches[0].clientY;
+                    } else {
+                        clientX = e.clientX;
+                        clientY = e.clientY;
+                    }
+                    return [clientX - rect.left, clientY - rect.top];
+                };
+
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+                canvas.addEventListener('touchstart', startDrawing);
+                canvas.addEventListener('touchmove', draw);
+                canvas.addEventListener('touchend', stopDrawing);
+
+                return () => {
+                    canvas.removeEventListener('mousedown', startDrawing);
+                    canvas.removeEventListener('mousemove', draw);
+                    canvas.removeEventListener('mouseup', stopDrawing);
+                    canvas.removeEventListener('mouseout', stopDrawing);
+                    canvas.removeEventListener('touchstart', startDrawing);
+                    canvas.removeEventListener('touchmove', draw);
+                    canvas.removeEventListener('touchend', stopDrawing);
+                };
+            }, []);
+
+            // دالة للتعامل مع الموافقة
+            const handleApprove = async () => {
+                if (!authReady || !db || !isSigned || !subscriptionData || !params.userId) return;
+                try {
+                    const approvedPayload = {
+                        ...subscriptionData,
+                        signature: signatureData,
+                        status: 'approved'
+                    };
+                    
+                    const approvedDocRef = doc(db, `/artifacts/${appId}/users/${params.userId}/subscriptions`, params.docId);
+                    await setDoc(approvedDocRef, approvedPayload);
+
+                    setShowModal(true);
+                } catch (e) {
+                    console.error('Error approving subscription:', e);
+                }
+            };
+
+            if (loading) {
+                return <div className="text-center text-lg text-gray-500">جاري تحميل الاستمارة...</div>;
+            }
+
+            if (!subscriptionData) {
+                return <div className="text-center text-xl text-red-500">عذراً، لم يتم العثور على الاستمارة المطلوبة.</div>;
+            }
+
+            return (
+                <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-xl border border-gray-200">
+                    <div className="text-center mb-10">
+                        <h2 className="text-4xl font-extrabold text-blue-800">استمارة اشتراك</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner">
+                            <p className="font-semibold text-lg text-gray-700">اسم العميل:</p>
+                            <p className="text-gray-900 mt-1">{subscriptionData.customerName}</p>
+                        </div>
+                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner">
+                            <p className="font-semibold text-lg text-gray-700">نوع الاشتراك:</p>
+                            <p className="text-gray-900 mt-1">{subscriptionData.subscriptionName}</p>
+                        </div>
+                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner">
+                            <p className="font-semibold text-lg text-gray-700">الفترة:</p>
+                            <p className="text-gray-900 mt-1">{subscriptionData.subscriptionDuration}</p>
+                        </div>
+                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner">
+                            <p className="font-semibold text-lg text-gray-700">سعر الاشتراك:</p>
+                            <p className="text-gray-900 mt-1">{subscriptionData.subscriptionPrice} د.ك</p>
+                        </div>
+                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner">
+                            <p className="font-semibold text-lg text-gray-700">سعر التوصيل:</p>
+                            <p className="text-gray-900 mt-1">{subscriptionData.deliveryPrice > 0 ? `${subscriptionData.deliveryPrice} د.ك` : 'التوصيل مجاني'}</p>
+                        </div>
+                        <div className="bg-blue-100 p-4 rounded-xl shadow-inner col-span-1 md:col-span-2">
+                            <p className="font-bold text-xl text-blue-800">الإجمالي:</p>
+                            <p className="text-2xl font-extrabold text-blue-900 mt-1">{subscriptionData.total} د.ك</p>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-4">الشروط والأحكام:</h3>
+                        <ul className="list-disc list-inside space-y-3 text-gray-700">
+                            <li>المبلغ المدفوع لا يسترد.</li>
+                            <li>اذا تم الغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون او مطعم التين الطبيعي في أي وقت.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl shadow-inner border border-gray-300">
+                        <p className="text-lg font-semibold text-gray-800 mb-3">يرجى التوقيع داخل المربع لاعتماد الاشتراك:</p>
+                        <div className="relative w-full h-40 bg-gray-100 border-2 border-dashed border-gray-400 rounded-xl overflow-hidden">
+                            <canvas
+                                ref={canvasRef}
+                                className="w-full h-full cursor-crosshair signature-canvas"
+                                width="600"
+                                height="200"
+                                style={{ width: '100%', height: '100%' }}
+                            ></canvas>
+                        </div>
+                        <div className="flex justify-end mt-4">
+                            <button
+                                onClick={() => {
+                                    const canvas = canvasRef.current;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                    setSignatureData(null);
+                                    setIsSigned(false);
+                                }}
+                                className="text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                            >
+                                مسح التوقيع
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mt-8">
+                        <button
+                            onClick={handleApprove}
+                            disabled={!isSigned}
+                            className={`w-full py-4 text-xl font-bold rounded-full transition-all duration-300 ${
+                                isSigned
+                                    ? 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 hover:shadow-xl'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            اعتمد
+                        </button>
+                    </div>
+
+                    {showModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-3xl p-8 shadow-2xl text-center max-w-sm w-full animate-fadeInUp">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-emerald-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h3 className="text-2xl font-bold text-gray-800 mb-2">شكراً لثقتكم...</h3>
+                                <p className="text-gray-600">تم اعتماد الاشتراك، يرجى المتابعة مع الموظف للدفع.</p>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="mt-6 bg-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300"
+                                >
+                                    إغلاق
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- مكون نافذة الصورة المنبثقة ---
+        const ImageModal = ({ imageUrl, onClose }) => (
+            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+                <div className="relative max-w-4xl max-h-screen">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-4 right-4 text-white text-3xl font-bold z-10"
+                    >
+                        &times;
+                    </button>
+                    <img src={imageUrl} alt="Meal Plan" className="rounded-xl shadow-2xl max-w-full max-h-full" />
+                </div>
+            </div>
+        );
+
+        // --- مكون نافذة الطباعة المنبثقة ---
+        const PrintModal = ({ subscription, onClose }) => {
+            const printRef = useRef();
+
+            const handlePrint = async () => {
+                const pdf = new jsPDF('p', 'mm', 'a4', true);
+                
+                // الصفحة 1: تفاصيل الاشتراك والتوقيع
+                const printElement = printRef.current;
+                if (printElement) {
+                    const canvas = await html2canvas(printElement, { scale: 2 });
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, null, 'FAST');
+                }
+
+                // إضافة صفحات خطة الوجبات
+                const durationToPages = {
+                    'اسبوع': 1, '٢اسبوع': 2, '٤اسابيع': 3, '١٠ أيام': 1, '٢٠يوم': 2, '٣٠يوم': 3
+                };
+                const numPages = durationToPages[subscription.subscriptionDuration] || 1;
+                const sub = subscriptionsData.find(s => s.id === subscription.subscriptionId);
+                
+                if (sub && sub.image) {
+                    for (let i = 0; i < numPages; i++) {
+                        pdf.addPage();
+                        const placeholderImgUrl = `https://placehold.co/800x1000/E5E7EB/1F2937?text=${encodeURIComponent(sub.name.replace(/\s/g, '+'))}+Page+${i+1}`;
+                        const img = new Image();
+                        img.crossOrigin = 'anonymous'; 
+                        img.src = placeholderImgUrl;
+                        await new Promise((resolve) => {
+                            img.onload = () => resolve();
+                            img.onerror = () => { console.error("Failed to load placeholder image."); resolve(); };
+                        });
+                        
+                        const imgWidth = pdf.internal.pageSize.getWidth();
+                        const imgHeight = (img.height * imgWidth) / img.width;
+                        pdf.addImage(img, 'JPEG', 0, 0, imgWidth, imgHeight);
+                    }
+                }
+                
+                pdf.save(`استمارة-اشتراك-${subscription.customerName}.pdf`);
+                onClose();
+            };
+
+            const getAddress = (addr) => {
+                if (subscription.addressType === 'بيت') {
+                    return `المنطقة: ${addr.area}, القطعة: ${addr.block}, الشارع: ${addr.street}, رقم المنزل: ${addr.houseNo} ${addr.avenue ? `, الجادة: ${addr.avenue}` : ''} ${addr.neighboring ? `, مبنى مجاور: ${addr.neighboring}` : ''}`;
+                } else {
+                    return `المنطقة: ${addr.area}, القطعة: ${addr.block}, الشارع: ${addr.street}, رقم البناية: ${addr.buildingNo}, الطابق: ${addr.floor}, الشقة: ${addr.apartmentNo} ${addr.avenue ? `, الجادة: ${addr.avenue}` : ''} ${addr.neighboring ? `, مبنى مجاور: ${addr.neighboring}` : ''}`;
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-4xl w-full flex flex-col items-center">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-6">معاينة الطباعة</h3>
+                        
+                        {/* محتوى قابل للطباعة بتنسيق A4 */}
+                        <div ref={printRef} className="bg-white p-8 w-full border border-gray-300">
+                            <div className="text-center mb-8">
+                                <h1 className="text-3xl font-bold">استمارة اشتراك</h1>
+                                <p className="text-sm text-gray-600">رقم الاستمارة: {subscription.id}</p>
+                            </div>
+                            
+                            <div className="mb-6 grid grid-cols-2 gap-4 text-gray-700">
+                                <div><strong>اسم العميل:</strong> {subscription.customerName}</div>
+                                <div><strong>رقم الهاتف:</strong> {subscription.customerPhone}</div>
+                                <div className="col-span-2"><strong>العنوان:</strong> {getAddress(subscription.address)}</div>
+                                <div><strong>نوع الاشتراك:</strong> {subscription.subscriptionName}</div>
+                                <div><strong>الفترة:</strong> {subscription.subscriptionDuration}</div>
+                                <div><strong>يوم البدء:</strong> {formatDateWithDay(subscription.startDate)}</div>
+                                <div><strong>يوم الانتهاء:</strong> {formatDateWithDay(subscription.endDate)}</div>
+                                <div><strong>أيام التوقف:</strong> {Object.entries(subscription.skippedDays).filter(([_, val]) => val).map(([day]) => day).join(', ') || 'لا يوجد'}</div>
+                                <div><strong>وقت التوصيل:</strong> {subscription.deliveryTime}</div>
+                                <div><strong>سعر الاشتراك:</strong> {subscription.subscriptionPrice} د.ك</div>
+                                <div><strong>سعر التوصيل:</strong> {subscription.deliveryPrice > 0 ? `${subscription.deliveryPrice} د.ك` : 'مجاني'}</div>
+                                <div><strong>الإجمالي:</strong> {subscription.total} د.ك</div>
+                            </div>
+                            
+                            <div className="border-t border-b border-gray-300 py-6">
+                                <h4 className="text-xl font-bold mb-2">الشروط والأحكام:</h4>
+                                <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
+                                    <li>المبلغ المدفوع لا يسترد.</li>
+                                    <li>اذا تم الغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون او مطعم التين الطبيعي في أي وقت.</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="mt-6 flex flex-col items-end">
+                                <p className="text-lg font-bold mb-2">توقيع العميل:</p>
+                                {subscription.signature && (
+                                    <img src={subscription.signature} alt="Client Signature" className="w-64 h-auto border border-gray-400 p-2"/>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-4 mt-6">
+                            <button
+                                onClick={handlePrint}
+                                className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300"
+                            >
+                                طباعة
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-gray-300 transition-colors duration-300"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+    </script>
 </body>
 </html>
