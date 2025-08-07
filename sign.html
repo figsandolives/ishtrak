@@ -3,100 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صفحة التوقيع</title>
-   
-<body>
-    <div class="container">
-        <h1>اعتماد الاشتراك بالتوقيع</h1>
-        
-        <div id="subscription-summary">
+    <title>توقيع واعتماد الاشتراك</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- شاشة التحميل -->
+    <div id="loadingScreen" class="loading">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">جاري تحميل بيانات الاشتراك...</p>
         </div>
+    </div>
 
-        <div id="meal-plan-image-container">
+    <!-- رسالة الخطأ -->
+    <div id="errorScreen" class="hidden loading">
+        <div class="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
+            <div class="text-6xl mb-4">❌</div>
+            <h2 class="text-2xl font-bold text-red-600 mb-4">خطأ في تحميل البيانات</h2>
+            <p class="text-gray-600 mb-6" id="errorMessage">حدث خطأ في تحميل بيانات الاشتراك</p>
+            <button onclick="location.reload()" class="w-full py-3 px-6 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-300">
+                إعادة المحاولة
+            </button>
         </div>
+    </div>
 
-        <div class="terms-and-conditions">
-            <h2>الشروط والأحكام</h2>
-            <ul>
-                <li>المبلغ المدفوع لا يسترد.</li>
-                <li>يجب إبلاغنا عن أي تغيير في العنوان قبل 24 ساعة.</li>
-                <li>في حالة التوقف المؤقت للاشتراك، يجب الإبلاغ قبل 48 ساعة.</li>
-                <li>إذا تم إلغاء الاشتراك لأي سبب كان، لا يمكن استرجاع المبلغ.</li>
-            </ul>
-        </div>
-        
-        <div class="signature-section">
-            <p><strong>توقيع العميل</strong></p>
-            <canvas id="signature-pad" width="600" height="200"></canvas>
-            <div class="signature-buttons">
-                <button type="button" id="clear-signature-btn">مسح</button>
-                <button type="button" id="approve-btn" disabled>اعتمد</button>
+    <!-- المحتوى الرئيسي -->
+    <div id="mainContent" class="hidden container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- العنوان -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">🍃 توقيع واعتماد الاشتراك</h1>
+                <p class="text-gray-600 text-lg">يرجى مراجعة البيانات والتوقيع لاعتماد الاشتراك</p>
+            </div>
+
+            <!-- بيانات الاشتراك -->
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">📋 تفاصيل الاشتراك</h2>
+                
+                <!-- بيانات العميل -->
+                <div class="bg-blue-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-4">👤 بيانات العميل</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><strong>اسم الزبون:</strong> <span id="customerName">جاري التحميل...</span></div>
+                        <div><strong>رقم الهاتف:</strong> <span id="phoneNumber">جاري التحميل...</span></div>
+                    </div>
+                </div>
+
+                <!-- العنوان -->
+                <div class="bg-green-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-green-800 mb-4">🏠 العنوان</h3>
+                    <div id="addressDetails" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>جاري تحميل بيانات العنوان...</div>
+                    </div>
+                </div>
+
+                <!-- تفاصيل الاشتراك -->
+                <div class="bg-purple-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-purple-800 mb-4">📋 تفاصيل الاشتراك</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><strong>نوع الاشتراك:</strong> <span id="subscriptionName">جاري التحميل...</span></div>
+                        <div><strong>المدة:</strong> <span id="subscriptionPeriod">جاري التحميل...</span></div>
+                        <div><strong>تاريخ البدء:</strong> <span id="startDate">جاري التحميل...</span></div>
+                        <div><strong>وقت التوصيل:</strong> <span id="deliveryTime">جاري التحميل...</span></div>
+                        <div><strong>سعر الاشتراك:</strong> <span id="subscriptionPrice">0</span> د.ك</div>
+                        <div><strong>سعر التوصيل:</strong> <span id="deliveryPrice">0</span> د.ك</div>
+                        <div class="md:col-span-2"><strong>الإجمالي:</strong> <span id="totalPrice" class="text-xl font-bold text-green-600">0</span> د.ك</div>
+                        <div id="excludedDaysDiv" class="md:col-span-2 hidden"><strong>الأيام المستبعدة:</strong> <span id="excludedDays"></span></div>
+                    </div>
+                </div>
+
+                <!-- صورة الاشتراك -->
+                <div id="subscriptionImageDiv" class="bg-orange-50 rounded-xl p-6 mb-6 hidden">
+                    <h3 class="text-xl font-semibold text-orange-800 mb-4">📸 جدول الاشتراك</h3>
+                    <div class="text-center">
+                        <img id="subscriptionImage" src="" alt="جدول الاشتراك" class="max-w-full h-auto rounded-lg shadow-lg mx-auto cursor-pointer" onclick="openImageModal()">
+                    </div>
+                </div>
+
+                <!-- الشروط والأحكام -->
+                <div class="bg-red-50 rounded-xl p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-red-800 mb-4">📜 الشروط والأحكام</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-start">
+                            <span class="text-red-600 mr-2">•</span>
+                            <span>المبلغ المدفوع لا يسترد.</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-red-600 mr-2">•</span>
+                            <span>إذا تم إلغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون أو مطعم التين الطبيعي في أي وقت.</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="agreeTerms" class="ml-2 w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                            <span class="text-sm font-medium">أوافق على الشروط والأحكام المذكورة أعلاه</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- منطقة التوقيع -->
+                <div class="bg-gray-50 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">✍️ التوقيع</h3>
+                    <p class="text-gray-600 mb-4">يرجى التوقيع في المربع أدناه لاعتماد الاشتراك:</p>
+                    
+                    <div class="mb-4 border-2 border-dashed border-gray-300 rounded-lg bg-white">
+                        <canvas id="signaturePad" class="signature-pad w-full block" width="600" height="200" style="width: 100%; height: 200px;"></canvas>
+                    </div>
+                    
+                    <div class="flex gap-4 mb-4">
+                        <button type="button" onclick="clearSignature()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">🗑️ مسح التوقيع</button>
+                        <button type="button" onclick="saveSignature()" id="saveBtn" class="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            ✅ اعتماد الاشتراك
+                        </button>
+                    </div>
+                    
+                    <div id="signatureStatus" class="text-sm text-gray-500 mt-2">
+                        يرجى التوقيع والموافقة على الشروط لتفعيل زر الاعتماد
+                    </div>
+                </div>
             </div>
         </div>
-
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <!-- نافذة عرض الصورة -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4" onclick="closeImageModal()">
+        <div class="relative max-w-4xl max-h-full">
+            <img id="modalImage" src="" alt="جدول الاشتراك" class="max-w-full max-h-full object-contain rounded-lg">
+            <button onclick="closeImageModal()" class="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-all">✕</button>
+        </div>
+    </div>
+
+    <!-- نافذة التأكيد -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="text-6xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">تم اعتماد الاشتراك بنجاح!</h2>
+            <p class="text-gray-600 mb-6">شكراً لثقتكم بنا. سيتم التواصل معكم قريباً لتأكيد موعد بدء التوصيل.</p>
+            <button onclick="closeSuccessModal()" class="w-full py-3 px-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all duration-300">
+                حسناً
+            </button>
+        </div>
+    </div>
+
     <script src="app.js"></script>
-</body>
- <link rel="stylesheet" href="style.css">
-    <style>
-        .signature-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
-        }
-        canvas {
-            border: 2px solid #333;
-            border-radius: 5px;
-            cursor: crosshair;
-            background-color: #f8f8f8;
-            width: 100%;
-            max-width: 600px;
-            height: 200px;
-        }
-        .signature-buttons {
-            margin-top: 10px;
-        }
-        .signature-buttons button {
-            margin: 0 5px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .terms-and-conditions {
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-            margin-top: 30px;
-        }
-        .terms-and-conditions h2 {
-            text-align: center;
-        }
-        .terms-and-conditions ul {
-            list-style: none;
-            padding: 0;
-            text-align: right;
-        }
-        .terms-and-conditions li {
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .meal-plan-image-container {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .meal-plan-image-container img {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-        }
-    </style>
-</head>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b74adb46e67cdc',t:'MTc1NDU3NTE0NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
