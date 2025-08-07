@@ -21,6 +21,8 @@ let isDrawing = false;
 let hasSignature = false;
 let subscriptionData = null;
 let customerId = null;
+let lastX = 0;
+let lastY = 0;
 
 // الحصول على معرف العميل من الرابط
 function getCustomerIdFromURL() {
@@ -31,13 +33,15 @@ function getCustomerIdFromURL() {
 // تهيئة لوحة التوقيع
 function initSignaturePad() {
     canvas = document.getElementById('signaturePad');
+    if (!canvas) {
+        console.error('Canvas element not found');
+        return;
+    }
+    
     ctx = canvas.getContext('2d');
     
-    // تعيين حجم الكانفاس
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * 2;
-    canvas.height = rect.height * 2;
-    ctx.scale(2, 2);
+    // تعيين حجم الكانفاس بناءً على حجم العنصر
+    resizeCanvas();
     
     // إعدادات الرسم
     ctx.strokeStyle = '#000000';
@@ -52,55 +56,135 @@ function initSignaturePad() {
     canvas.addEventListener('mouseout', stopDrawing);
 
     // أحداث اللمس للهواتف
-    canvas.addEventListener('touchstart', handleTouch);
-    canvas.addEventListener('touchmove', handleTouch);
-    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    
+    console.log('Signature pad initialized successfully');
+}
+
+// تغيير حجم الكانفاس
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    ctx.scale(dpr, dpr);
+    
+    // إعادة تطبيق إعدادات الرسم
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+}
+
+// الحصول على إحداثيات الماوس
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
+
+// الحصول على إحداثيات اللمس
+function getTouchPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+    };
 }
 
 // بدء الرسم
 function startDrawing(e) {
     isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width) / 2;
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height) / 2;
+    const pos = getMousePos(e);
+    lastX = pos.x;
+    lastY = pos.y;
     
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(lastX, lastY);
+    
+    console.log('Started drawing at:', lastX, lastY);
 }
 
 // الرسم
 function draw(e) {
     if (!isDrawing) return;
     
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width) / 2;
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height) / 2;
+    const pos = getMousePos(e);
     
-    ctx.lineTo(x, y);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     
-    hasSignature = true;
-    updateSaveButton();
+    lastX = pos.x;
+    lastY = pos.y;
+    
+    if (!hasSignature) {
+        hasSignature = true;
+        canvas.classList.add('signed');
+        updateSaveButton();
+        updateSignatureStatus('تم التوقيع ✓');
+    }
 }
 
 // إيقاف الرسم
 function stopDrawing() {
     if (isDrawing) {
         isDrawing = false;
-        canvas.classList.add('signed');
+        console.log('Stopped drawing');
     }
 }
 
-// التعامل مع اللمس
-function handleTouch(e) {
+// التعامل مع بداية اللمس
+function handleTouchStart(e) {
     e.preventDefault();
-    const touch = e.touches[0];
-    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 
-                                    e.type === 'touchmove' ? 'mousemove' : 'mouseup', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-    });
-    canvas.dispatchEvent(mouseEvent);
+    isDrawing = true;
+    const pos = getTouchPos(e);
+    lastX = pos.x;
+    lastY = pos.y;
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    
+    console.log('Touch started at:', lastX, lastY);
+}
+
+// التعامل مع حركة اللمس
+function handleTouchMove(e) {
+    e.preventDefault();
+    if (!isDrawing) return;
+    
+    const pos = getTouchPos(e);
+    
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    
+    lastX = pos.x;
+    lastY = pos.y;
+    
+    if (!hasSignature) {
+        hasSignature = true;
+        canvas.classList.add('signed');
+        updateSaveButton();
+        updateSignatureStatus('تم التوقيع ✓');
+    }
+}
+
+// التعامل مع انتهاء اللمس
+function handleTouchEnd(e) {
+    e.preventDefault();
+    if (isDrawing) {
+        isDrawing = false;
+        console.log('Touch ended');
+    }
 }
 
 // مسح التوقيع
@@ -109,17 +193,34 @@ function clearSignature() {
     hasSignature = false;
     canvas.classList.remove('signed');
     updateSaveButton();
+    updateSignatureStatus('يرجى التوقيع والموافقة على الشروط لتفعيل زر الاعتماد');
+    console.log('Signature cleared');
+}
+
+// تحديث حالة التوقيع
+function updateSignatureStatus(message) {
+    const statusElement = document.getElementById('signatureStatus');
+    if (statusElement) {
+        statusElement.textContent = message;
+    }
 }
 
 // تحديث زر الحفظ
 function updateSaveButton() {
     const saveBtn = document.getElementById('saveBtn');
-    const agreeTerms = document.getElementById('agreeTerms').checked;
+    const agreeTerms = document.getElementById('agreeTerms');
     
-    if (hasSignature && agreeTerms) {
-        saveBtn.disabled = false;
-    } else {
-        saveBtn.disabled = true;
+    if (!saveBtn || !agreeTerms) return;
+    
+    const canSave = hasSignature && agreeTerms.checked;
+    saveBtn.disabled = !canSave;
+    
+    if (canSave) {
+        updateSignatureStatus('جاهز للاعتماد ✅');
+    } else if (hasSignature && !agreeTerms.checked) {
+        updateSignatureStatus('يرجى الموافقة على الشروط والأحكام');
+    } else if (!hasSignature && agreeTerms.checked) {
+        updateSignatureStatus('يرجى التوقيع أولاً');
     }
 }
 
@@ -134,6 +235,10 @@ async function saveSignature() {
         alert('يرجى الموافقة على الشروط والأحكام');
         return;
     }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ جاري الحفظ...';
 
     try {
         // تحويل التوقيع إلى صورة
@@ -158,6 +263,10 @@ async function saveSignature() {
     } catch (error) {
         console.error('خطأ في حفظ التوقيع:', error);
         alert('حدث خطأ في حفظ التوقيع. يرجى المحاولة مرة أخرى.');
+        
+        // إعادة تفعيل الزر
+        saveBtn.disabled = false;
+        saveBtn.textContent = '✅ اعتماد الاشتراك';
     }
 }
 
@@ -177,14 +286,18 @@ function dataURLtoBlob(dataURL) {
 // تحميل بيانات الاشتراك
 async function loadSubscriptionData() {
     try {
+        console.log('Loading subscription data for customer:', customerId);
+        
         const doc = await db.collection('subscriptions').doc(customerId).get();
         
         if (!doc.exists) {
-            alert('الاشتراك غير موجود');
+            showError('الاشتراك غير موجود', 'لم يتم العثور على بيانات الاشتراك المطلوب');
             return;
         }
 
         subscriptionData = doc.data();
+        console.log('Subscription data loaded:', subscriptionData);
+        
         displaySubscriptionData();
         
         // إخفاء شاشة التحميل وإظهار المحتوى
@@ -193,70 +306,115 @@ async function loadSubscriptionData() {
 
     } catch (error) {
         console.error('خطأ في تحميل البيانات:', error);
-        alert('حدث خطأ في تحميل بيانات الاشتراك');
+        showError('خطأ في الاتصال', 'حدث خطأ في تحميل بيانات الاشتراك من الخادم');
     }
+}
+
+// عرض رسالة خطأ
+function showError(title, message) {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('errorScreen').classList.remove('hidden');
+    document.getElementById('errorMessage').textContent = message;
 }
 
 // عرض بيانات الاشتراك
 function displaySubscriptionData() {
-    // بيانات العميل
-    document.getElementById('customerName').textContent = subscriptionData.customerName;
-    document.getElementById('phoneNumber').textContent = subscriptionData.phoneNumber;
+    try {
+        // بيانات العميل
+        document.getElementById('customerName').textContent = subscriptionData.customerName || 'غير محدد';
+        document.getElementById('phoneNumber').textContent = subscriptionData.phoneNumber || 'غير محدد';
 
-    // العنوان
+        // العنوان
+        displayAddressData();
+
+        // تفاصيل الاشتراك
+        displaySubscriptionDetails();
+
+        // الأيام المستبعدة
+        displayExcludedDays();
+
+        // صورة الاشتراك
+        displaySubscriptionImage();
+        
+        console.log('All subscription data displayed successfully');
+        
+    } catch (error) {
+        console.error('خطأ في عرض البيانات:', error);
+        showError('خطأ في عرض البيانات', 'حدث خطأ في عرض بيانات الاشتراك');
+    }
+}
+
+// عرض بيانات العنوان
+function displayAddressData() {
     const addressDiv = document.getElementById('addressDetails');
+    const address = subscriptionData.address || {};
+    
     let addressHTML = `
         <div><strong>النوع:</strong> ${subscriptionData.addressType === 'house' ? 'بيت' : 'شقة'}</div>
-        <div><strong>المنطقة:</strong> ${subscriptionData.address.area}</div>
-        <div><strong>القطعة:</strong> ${subscriptionData.address.block}</div>
-        <div><strong>الشارع:</strong> ${subscriptionData.address.street}</div>
+        <div><strong>المنطقة:</strong> ${address.area || 'غير محدد'}</div>
+        <div><strong>القطعة:</strong> ${address.block || 'غير محدد'}</div>
+        <div><strong>الشارع:</strong> ${address.street || 'غير محدد'}</div>
     `;
     
-    if (subscriptionData.address.avenue) {
-        addressHTML += `<div><strong>الجادة:</strong> ${subscriptionData.address.avenue}</div>`;
+    if (address.avenue) {
+        addressHTML += `<div><strong>الجادة:</strong> ${address.avenue}</div>`;
     }
     
     if (subscriptionData.addressType === 'house') {
-        addressHTML += `<div><strong>رقم المنزل:</strong> ${subscriptionData.address.houseNumber}</div>`;
+        addressHTML += `<div><strong>رقم المنزل:</strong> ${address.houseNumber || 'غير محدد'}</div>`;
     } else {
         addressHTML += `
-            <div><strong>البناية:</strong> ${subscriptionData.address.buildingName}</div>
-            <div><strong>الطابق:</strong> ${subscriptionData.address.floor}</div>
-            <div><strong>الشقة:</strong> ${subscriptionData.address.apartment}</div>
+            <div><strong>البناية:</strong> ${address.buildingName || 'غير محدد'}</div>
+            <div><strong>الطابق:</strong> ${address.floor || 'غير محدد'}</div>
+            <div><strong>الشقة:</strong> ${address.apartment || 'غير محدد'}</div>
         `;
     }
     
-    if (subscriptionData.address.nearbyBuilding) {
-        addressHTML += `<div><strong>مبنى مجاور:</strong> ${subscriptionData.address.nearbyBuilding}</div>`;
+    if (address.nearbyBuilding) {
+        addressHTML += `<div><strong>مبنى مجاور:</strong> ${address.nearbyBuilding}</div>`;
     }
     
     addressDiv.innerHTML = addressHTML;
+}
 
-    // تفاصيل الاشتراك
-    document.getElementById('subscriptionName').textContent = subscriptionData.subscription.name;
+// عرض تفاصيل الاشتراك
+function displaySubscriptionDetails() {
+    const subscription = subscriptionData.subscription || {};
+    
+    document.getElementById('subscriptionName').textContent = subscription.name || 'غير محدد';
     document.getElementById('subscriptionPeriod').textContent = getPeriodText(subscriptionData.period);
-    document.getElementById('startDate').textContent = new Date(subscriptionData.startDate).toLocaleDateString('ar-EG', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric', 
-        calendar: 'gregory' 
-    });
-    document.getElementById('deliveryTime').textContent = subscriptionData.deliveryTime;
-    document.getElementById('subscriptionPrice').textContent = subscriptionData.price;
-    document.getElementById('deliveryPrice').textContent = subscriptionData.deliveryPrice;
-    document.getElementById('totalPrice').textContent = subscriptionData.totalPrice;
+    
+    // تنسيق التاريخ
+    if (subscriptionData.startDate) {
+        const startDate = new Date(subscriptionData.startDate);
+        document.getElementById('startDate').textContent = startDate.toLocaleDateString('ar-EG', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            calendar: 'gregory' 
+        });
+    }
+    
+    document.getElementById('deliveryTime').textContent = subscriptionData.deliveryTime || 'غير محدد';
+    document.getElementById('subscriptionPrice').textContent = subscriptionData.price || '0';
+    document.getElementById('deliveryPrice').textContent = subscriptionData.deliveryPrice || '0';
+    document.getElementById('totalPrice').textContent = subscriptionData.totalPrice || '0';
+}
 
-    // الأيام المستبعدة
+// عرض الأيام المستبعدة
+function displayExcludedDays() {
     if (subscriptionData.excludedDays && subscriptionData.excludedDays.length > 0) {
         const weekDays = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-        const excludedDaysText = subscriptionData.excludedDays.map(day => weekDays[day]).join(', ');
+        const excludedDaysText = subscriptionData.excludedDays.map(day => weekDays[day] || `يوم ${day}`).join(', ');
         document.getElementById('excludedDays').textContent = excludedDaysText;
         document.getElementById('excludedDaysDiv').classList.remove('hidden');
     }
+}
 
-    // صورة الاشتراك
-    if (subscriptionData.subscription.image) {
+// عرض صورة الاشتراك
+function displaySubscriptionImage() {
+    if (subscriptionData.subscription && subscriptionData.subscription.image) {
         document.getElementById('subscriptionImage').src = subscriptionData.subscription.image;
         document.getElementById('subscriptionImageDiv').classList.remove('hidden');
     }
@@ -274,14 +432,16 @@ function getPeriodText(period) {
         'thirtyDays': '٣٠ يوم',
         'custom': 'مخصص'
     };
-    return periods[period] || period;
+    return periods[period] || period || 'غير محدد';
 }
 
 // فتح نافذة الصورة
 function openImageModal() {
-    const modalImage = document.getElementById('modalImage');
-    modalImage.src = subscriptionData.subscription.image;
-    document.getElementById('imageModal').classList.remove('hidden');
+    if (subscriptionData && subscriptionData.subscription && subscriptionData.subscription.image) {
+        const modalImage = document.getElementById('modalImage');
+        modalImage.src = subscriptionData.subscription.image;
+        document.getElementById('imageModal').classList.remove('hidden');
+    }
 }
 
 // إغلاق نافذة الصورة
@@ -292,31 +452,40 @@ function closeImageModal() {
 // إغلاق نافذة النجاح
 function closeSuccessModal() {
     document.getElementById('successModal').classList.add('hidden');
-    // يمكن إعادة توجيه المستخدم أو إغلاق الصفحة
 }
-
-// مراقبة تغيير checkbox الشروط والأحكام
-document.getElementById('agreeTerms').addEventListener('change', updateSaveButton);
 
 // تهيئة الصفحة
 window.addEventListener('load', function() {
+    console.log('Page loaded, initializing...');
+    
     customerId = getCustomerIdFromURL();
+    console.log('Customer ID:', customerId);
     
     if (!customerId) {
-        alert('رابط غير صحيح');
+        showError('رابط غير صحيح', 'لم يتم تمرير معرف العميل في الرابط');
         return;
     }
 
-    initSignaturePad();
+    // تهيئة لوحة التوقيع
+    setTimeout(() => {
+        initSignaturePad();
+    }, 100);
+    
+    // تحميل بيانات الاشتراك
     loadSubscriptionData();
+    
+    // مراقبة تغيير checkbox الشروط والأحكام
+    const agreeTerms = document.getElementById('agreeTerms');
+    if (agreeTerms) {
+        agreeTerms.addEventListener('change', updateSaveButton);
+    }
 });
 
 // تحديث حجم الكانفاس عند تغيير حجم النافذة
 window.addEventListener('resize', function() {
-    if (canvas) {
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * 2;
-        canvas.height = rect.height * 2;
-        ctx.scale(2, 2);
+    if (canvas && ctx) {
+        setTimeout(() => {
+            resizeCanvas();
+        }, 100);
     }
 });
