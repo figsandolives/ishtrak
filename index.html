@@ -57,26 +57,60 @@
             background: #f0fdf4;
         }
         
-        /* تصميم الطباعة */
+        /* تصميم الطباعة المحدث لصفحة A4 واحدة */
         @media print {
             body * { visibility: hidden; }
             .print-content, .print-content * { visibility: visible; }
-            .print-content { position: absolute; left: 0; top: 0; width: 100%; }
+            
+            .print-content { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%;
+                margin: 0;
+                box-sizing: border-box;
+            }
             .no-print { display: none !important; }
-        }
-        
-        .print-page {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm;
-            margin: 0 auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            page-break-after: always;
-        }
-        
-        .print-page:last-child {
-            page-break-after: auto;
+            
+            .print-form-page {
+                width: 100%;
+                max-width: 180mm;
+                margin: 0 auto;
+                text-align: right;
+                padding: 20mm;
+                box-sizing: border-box;
+            }
+            
+            .print-form-page .print-section {
+                border: 1px solid #d1d5db !important;
+                border-radius: 8px !important;
+                background: none !important;
+                padding: 1rem !important;
+                margin-top: 1rem !important;
+            }
+            
+            /* تعديل مهم هنا: لزيادة حجم الصورة */
+            .print-schedule-page {
+                width: 100%;
+                height: 100vh; /* لضمان ملء الصفحة بالكامل عمودياً */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .print-schedule-image {
+                max-width: 95%; /* زيادة الحجم الأقصى للصورة */
+                max-height: 95vh;
+                height: auto;
+                object-fit: contain;
+            }
+            
+            /* إضافة فاصل صفحات لكل صفحة طباعة */
+            .print-page-break {
+                page-break-after: always;
+            }
         }
     </style>
 </head>
@@ -108,19 +142,22 @@
         </div>
     </div>
 
-    <!-- نموذج الاشتراك الجديد -->
+    <!-- نموذج الاشتراك الجديد / التعديل -->
     <div id="newSubscriptionModal" class="modal">
         <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto m-4" onclick="event.stopPropagation()">
             <div class="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">📝 استمارة اشتراك جديدة</h2>
+                    <h2 id="modalTitle" class="text-2xl font-bold text-gray-800">📝 استمارة اشتراك جديدة</h2>
                     <button type="button" onclick="closeModal('newSubscriptionModal')" class="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center text-xl transition-colors">✕</button>
                 </div>
             </div>
 
             <form id="subscriptionForm" class="p-6 space-y-6">
+                <!-- حقل مخفي لتخزين معرف المستند في حالة التعديل -->
+                <input type="hidden" id="subscriptionId">
+
                 <!-- بيانات العميل -->
-                <div class="bg-blue-50 rounded-xl p-6">
+                <div class="bg-blue-50 rounded-xl p-6 border border-gray-300">
                     <h3 class="text-xl font-semibold text-blue-800 mb-4">👤 بيانات العميل</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -135,10 +172,10 @@
                 </div>
 
                 <!-- العنوان -->
-                <div class="bg-green-50 rounded-xl p-6">
+                <div class="bg-green-50 rounded-xl p-6 border border-gray-300">
                     <h3 class="text-xl font-semibold text-green-800 mb-4">🏠 العنوان</h3>
                     <div class="flex gap-4 mb-4">
-                        <button type="button" onclick="selectAddressType('house')" id="houseBtn" class="flex-1 py-3 px-6 border-2 border-green-300 rounded-lg font-medium transition-all duration-200 hover:bg-green-100">🏠 بيت</button>
+                        <button type="button" onclick="selectAddressType('house')" id="houseBtn" class="flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100">🏠 بيت</button>
                         <button type="button" onclick="selectAddressType('apartment')" id="apartmentBtn" class="flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100">🏢 شقة</button>
                     </div>
 
@@ -148,7 +185,7 @@
                 </div>
 
                 <!-- نوع الاشتراك -->
-                <div class="bg-purple-50 rounded-xl p-6">
+                <div class="bg-purple-50 rounded-xl p-6 border border-gray-300">
                     <h3 class="text-xl font-semibold text-purple-800 mb-4">📋 نوع الاشتراك</h3>
                     <div class="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
                         <div id="subscriptionTypes"></div>
@@ -156,9 +193,11 @@
                 </div>
 
                 <!-- تفاصيل الاشتراك -->
-                <div id="subscriptionDetails" class="bg-orange-50 rounded-xl p-6 hidden">
+                <div id="subscriptionDetails" class="bg-orange-50 rounded-xl p-6 hidden border border-gray-300">
                     <h3 class="text-xl font-semibold text-orange-800 mb-4">⏰ تفاصيل الاشتراك</h3>
                     
+                    <div class="period-options-container"></div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">تاريخ بدء الاشتراك *</label>
@@ -205,8 +244,6 @@
                     </div>
                 </div>
 
-
-
                 <!-- أزرار الإجراءات -->
                 <div class="flex gap-4 pt-6 border-t border-gray-200">
                     <button type="button" onclick="closeModal('newSubscriptionModal')" class="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">❌ إلغاء</button>
@@ -235,8 +272,6 @@
             <button type="button" onclick="closeModal('imageModal')" class="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl transition-all">✕</button>
         </div>
     </div>
-
-
 
     <!-- منطقة الطباعة المخفية -->
     <div id="printArea" class="print-content hidden">
@@ -282,14 +317,14 @@
             { id: 18, name: "اشتراك مخصص", prices: { custom: true }, image: null, isCustom: true }
         ];
 
+        // المتغيرات العامة لحالة النموذج
         let selectedSubscription = null;
         let selectedPeriod = null;
         let selectedPrice = 0;
         let addressType = null;
         let excludedDays = [];
-        let signaturePad = null;
-        let isSignatureSigned = false;
-        let currentSubscriptionData = null;
+        let editingSubscriptionId = null; // لتخزين معرف الاشتراك عند التعديل
+        let customImageFile = null; // لتخزين ملف الصورة المخصصة
 
         // تحويل الأرقام العربية إلى إنجليزية
         function convertArabicToEnglish(input) {
@@ -306,12 +341,10 @@
 
         // فتح النافذة
         function openModal(modalId) {
-            // إغلاق جميع النوافذ أولاً
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.classList.remove('show');
             });
             
-            // فتح النافذة المطلوبة
             setTimeout(() => {
                 document.getElementById(modalId).classList.add('show');
             }, 100);
@@ -328,6 +361,9 @@
 
         // فتح نموذج الاشتراك الجديد
         function openNewSubscriptionForm() {
+            editingSubscriptionId = null;
+            document.getElementById('modalTitle').textContent = '📝 استمارة اشتراك جديدة';
+            document.getElementById('submitBtn').textContent = '✅ إنشاء الاستمارة';
             openModal('newSubscriptionModal');
             initializeSubscriptionTypes();
             initializeWeekDays();
@@ -340,73 +376,94 @@
             selectedPrice = 0;
             addressType = null;
             excludedDays = [];
-            
+            customImageFile = null;
+
             document.getElementById('subscriptionForm').reset();
+            document.getElementById('subscriptionId').value = '';
             document.getElementById('subscriptionDetails').classList.add('hidden');
             document.getElementById('addressFields').innerHTML = '';
+
+            // إزالة التحديدات
+            document.querySelectorAll('.subscription-card').forEach(card => card.classList.remove('border-purple-500', 'bg-purple-50', 'shadow-lg'));
+            document.querySelectorAll('.price-option').forEach(option => option.classList.remove('border-orange-500', 'bg-orange-50'));
+            
+            // إعادة تعيين أزرار العنوان
+            document.getElementById('houseBtn').className = 'flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100';
+            document.getElementById('apartmentBtn').className = 'flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100';
+            
+            updateTotalPrice();
         }
 
         // اختيار نوع العنوان
         function selectAddressType(type) {
             addressType = type;
-            document.getElementById('houseBtn').className = type === 'house' ? 
-                'flex-1 py-3 px-6 border-2 border-green-500 bg-green-100 rounded-lg font-medium transition-all duration-200' :
-                'flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100';
+            const houseBtn = document.getElementById('houseBtn');
+            const apartmentBtn = document.getElementById('apartmentBtn');
             
-            document.getElementById('apartmentBtn').className = type === 'apartment' ? 
-                'flex-1 py-3 px-6 border-2 border-green-500 bg-green-100 rounded-lg font-medium transition-all duration-200' :
-                'flex-1 py-3 px-6 border-2 border-gray-300 rounded-lg font-medium transition-all duration-200 hover:bg-gray-100';
+            houseBtn.classList.remove('border-green-500', 'bg-green-100');
+            apartmentBtn.classList.remove('border-green-500', 'bg-green-100');
+
+            if (type === 'house') {
+                houseBtn.classList.add('border-green-500', 'bg-green-100');
+            } else {
+                apartmentBtn.classList.add('border-green-500', 'bg-green-100');
+            }
             
             generateAddressFields(type);
         }
 
         // إنشاء حقول العنوان
-        function generateAddressFields(type) {
+        function generateAddressFields(type, data = {}) {
             const addressFields = document.getElementById('addressFields');
+            let fieldsHtml = '';
             
             if (type === 'house') {
-                addressFields.innerHTML = `
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">المنطقة *</label><input type="text" id="area" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">القطعة *</label><input type="text" id="block" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشارع *</label><input type="text" id="street" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الجادة (إن وجدت)</label><input type="text" id="avenue" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">رقم المنزل *</label><input type="text" id="houseNumber" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">مبنى مجاور؟ (اختياري)</label><input type="text" id="nearbyBuilding" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
+                fieldsHtml = `
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">المنطقة *</label><input type="text" id="area" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.area || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">القطعة *</label><input type="text" id="block" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.block || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشارع *</label><input type="text" id="street" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.street || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الجادة (إن وجدت)</label><input type="text" id="avenue" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.avenue || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">رقم المنزل *</label><input type="text" id="houseNumber" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.houseNumber || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">مبنى مجاور؟ (اختياري)</label><input type="text" id="nearbyBuilding" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.nearbyBuilding || ''}"></div>
                 `;
             } else if (type === 'apartment') {
-                addressFields.innerHTML = `
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">المنطقة *</label><input type="text" id="area" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">القطعة *</label><input type="text" id="block" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشارع *</label><input type="text" id="street" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الجادة (إن وجدت)</label><input type="text" id="avenue" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">رقم/اسم البناية *</label><input type="text" id="buildingName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الطابق *</label><input type="text" id="floor" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشقة *</label><input type="text" id="apartment" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-2">مبنى مجاور؟ (اختياري)</label><input type="text" id="nearbyBuilding" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"></div>
+                fieldsHtml = `
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">المنطقة *</label><input type="text" id="area" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.area || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">القطعة *</label><input type="text" id="block" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.block || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشارع *</label><input type="text" id="street" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.street || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الجادة (إن وجدت)</label><input type="text" id="avenue" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.avenue || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">رقم/اسم البناية *</label><input type="text" id="buildingName" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.buildingName || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الطابق *</label><input type="text" id="floor" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.floor || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">الشقة *</label><input type="text" id="apartment" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.apartment || ''}"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-2">مبنى مجاور؟ (اختياري)</label><input type="text" id="nearbyBuilding" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value="${data.nearbyBuilding || ''}"></div>
                 `;
             }
+            addressFields.innerHTML = fieldsHtml;
         }
 
         // تهيئة أنواع الاشتراكات
-        function initializeSubscriptionTypes() {
+        function initializeSubscriptionTypes(selectedId = null) {
             const container = document.getElementById('subscriptionTypes');
             container.innerHTML = '';
             
             subscriptionTypes.forEach(subscription => {
                 const div = document.createElement('div');
-                div.className = 'subscription-card border-2 border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg';
+                div.className = `subscription-card border-2 border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedId === subscription.id ? 'border-purple-500 bg-purple-50 shadow-lg' : ''}`;
                 div.onclick = () => selectSubscription(subscription);
                 
                 let pricesHtml = '';
+                // تم تعديل المسار هنا
+                const imageUrl = subscription.image ? `./${subscription.image}` : '';
+                
                 if (subscription.isCustom) {
                     pricesHtml = '<div class="text-sm text-gray-600">سعر مخصص</div>';
                 } else {
                     const prices = subscription.prices;
-                    if (prices.week) {
-                        pricesHtml += `<div class="text-sm text-gray-600">أسبوع: ${prices.week} د.ك | أسبوعين: ${prices.twoWeeks} د.ك | شهر: ${prices.month} د.ك</div>`;
-                    } else {
-                        pricesHtml += `<div class="text-sm text-gray-600">١٠ أيام: ${prices.tenDays} د.ك | ٢٠ يوم: ${prices.twentyDays} د.ك | ٣٠ يوم: ${prices.thirtyDays} د.ك</div>`;
-                    }
+                    const periodKeys = Object.keys(prices);
+                    pricesHtml = periodKeys.map(key => {
+                        return `${getPeriodText(key)}: ${prices[key]} د.ك`;
+                    }).join(' | ');
+                    pricesHtml = `<div class="text-sm text-gray-600">${pricesHtml}</div>`;
                 }
                 
                 div.innerHTML = `
@@ -416,7 +473,7 @@
                             ${pricesHtml}
                             ${subscription.note ? `<div class="text-xs text-blue-600 mt-1">${subscription.note}</div>` : ''}
                         </div>
-                        ${subscription.image ? `<img src="${subscription.image}" alt="صورة الاشتراك" class="subscription-image w-16 h-16 object-cover rounded-lg" onclick="event.stopPropagation(); showImage('${subscription.image}')">` : ''}
+                        ${imageUrl ? `<img src="${imageUrl}" alt="صورة الاشتراك" class="subscription-image w-16 h-16 object-cover rounded-lg" onclick="event.stopPropagation(); showImage('${imageUrl}')">` : ''}
                     </div>
                 `;
                 
@@ -428,63 +485,40 @@
         function selectSubscription(subscription) {
             selectedSubscription = subscription;
             
-            // تحديث التصميم
             document.querySelectorAll('.subscription-card').forEach(card => {
-                card.className = 'subscription-card border-2 border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg';
+                card.classList.remove('border-purple-500', 'bg-purple-50', 'shadow-lg');
             });
-            event.currentTarget.className = 'subscription-card border-2 border-purple-500 bg-purple-50 rounded-xl p-4 cursor-pointer transition-all duration-200 shadow-lg';
+            event.currentTarget.classList.add('border-purple-500', 'bg-purple-50', 'shadow-lg');
             
-            // عرض خيارات الفترة
             showPeriodOptions(subscription);
         }
 
         // عرض خيارات الفترة
-        function showPeriodOptions(subscription) {
+        function showPeriodOptions(subscription, selectedPeriodKey = null) {
             const detailsDiv = document.getElementById('subscriptionDetails');
             detailsDiv.classList.remove('hidden');
             
-            // البحث عن div خيارات الفترة الموجود أو إنشاء واحد جديد
             let periodContainer = detailsDiv.querySelector('.period-options-container');
             if (!periodContainer) {
                 periodContainer = document.createElement('div');
                 periodContainer.className = 'period-options-container';
                 const firstChild = detailsDiv.querySelector('h3').nextElementSibling;
-                firstChild.insertBefore(periodContainer, firstChild.firstChild);
+                detailsDiv.insertBefore(periodContainer, firstChild);
             }
             
-            // إنشاء خيارات الفترة
             let periodOptionsHtml = '<div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-3">اختر فترة الاشتراك *</label><div class="grid grid-cols-1 md:grid-cols-3 gap-3">';
             
             if (subscription.isCustom) {
-                periodOptionsHtml += `
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('week', 0)">
-                        <div class="font-semibold">أسبوع</div>
+                const periods = ['week', 'twoWeeks', 'fourWeeks', 'tenDays', 'twentyDays', 'thirtyDays'];
+                periodOptionsHtml += periods.map(p => `
+                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === p ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${p}', 0)">
+                        <div class="font-semibold">${getPeriodText(p)}</div>
                         <div class="text-sm text-gray-600">سعر مخصص</div>
                     </div>
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('twoWeeks', 0)">
-                        <div class="font-semibold">أسبوعين</div>
-                        <div class="text-sm text-gray-600">سعر مخصص</div>
-                    </div>
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('fourWeeks', 0)">
-                        <div class="font-semibold">٤ أسابيع</div>
-                        <div class="text-sm text-gray-600">سعر مخصص</div>
-                    </div>
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('tenDays', 0)">
-                        <div class="font-semibold">١٠ أيام</div>
-                        <div class="text-sm text-gray-600">سعر مخصص</div>
-                    </div>
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('twentyDays', 0)">
-                        <div class="font-semibold">٢٠ يوم</div>
-                        <div class="text-sm text-gray-600">سعر مخصص</div>
-                    </div>
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('thirtyDays', 0)">
-                        <div class="font-semibold">٣٠ يوم</div>
-                        <div class="text-sm text-gray-600">سعر مخصص</div>
-                    </div>
-                `;
+                `).join('');
+                
                 periodOptionsHtml += '</div></div>';
                 
-                // إضافة حقول الاشتراك المخصص
                 periodOptionsHtml += `
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">السعر المخصص (د.ك) *</label>
@@ -498,41 +532,16 @@
                 `;
             } else {
                 const prices = subscription.prices;
-                if (prices.week) {
-                    periodOptionsHtml += `
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('week', ${prices.week})">
-                            <div class="font-semibold">أسبوع</div>
-                            <div class="text-sm text-gray-600">${prices.week} د.ك</div>
-                        </div>
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('twoWeeks', ${prices.twoWeeks})">
-                            <div class="font-semibold">أسبوعين</div>
-                            <div class="text-sm text-gray-600">${prices.twoWeeks} د.ك</div>
-                        </div>
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('month', ${prices.month})">
-                            <div class="font-semibold">شهر</div>
-                            <div class="text-sm text-gray-600">${prices.month} د.ك</div>
-                        </div>
-                    `;
-                } else {
-                    periodOptionsHtml += `
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('tenDays', ${prices.tenDays})">
-                            <div class="font-semibold">١٠ أيام</div>
-                            <div class="text-sm text-gray-600">${prices.tenDays} د.ك</div>
-                        </div>
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('twentyDays', ${prices.twentyDays})">
-                            <div class="font-semibold">٢٠ يوم</div>
-                            <div class="text-sm text-gray-600">${prices.twentyDays} د.ك</div>
-                        </div>
-                        <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center" onclick="selectPeriod('thirtyDays', ${prices.thirtyDays})">
-                            <div class="font-semibold">٣٠ يوم</div>
-                            <div class="text-sm text-gray-600">${prices.thirtyDays} د.ك</div>
-                        </div>
-                    `;
-                }
+                const periodKeys = Object.keys(prices);
+                periodOptionsHtml += periodKeys.map(key => `
+                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === key ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${key}', ${prices[key]})">
+                        <div class="font-semibold">${getPeriodText(key)}</div>
+                        <div class="text-sm text-gray-600">${prices[key]} د.ك</div>
+                    </div>
+                `).join('');
                 periodOptionsHtml += '</div></div>';
             }
             
-            // تحديث محتوى الحاوية
             periodContainer.innerHTML = periodOptionsHtml;
         }
 
@@ -541,11 +550,10 @@
             selectedPeriod = period;
             selectedPrice = price;
             
-            // تحديث التصميم
             document.querySelectorAll('.price-option').forEach(option => {
-                option.className = 'price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center';
+                option.classList.remove('border-orange-500', 'bg-orange-50');
             });
-            event.currentTarget.className = 'price-option border-2 border-orange-500 bg-orange-50 rounded-lg p-3 cursor-pointer text-center';
+            event.currentTarget.classList.add('border-orange-500', 'bg-orange-50');
             
             updateTotalPrice();
         }
@@ -558,78 +566,95 @@
         }
 
         // معاينة الصورة المخصصة
-        function previewCustomImage() {
-            const file = document.getElementById('customImage').files[0];
+        function previewCustomImage(file = null, url = null) {
             const preview = document.getElementById('imagePreview');
-            
+            preview.innerHTML = ''; // مسح أي معاينة سابقة
+
             if (file) {
+                customImageFile = file;
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     preview.innerHTML = `<img src="${e.target.result}" alt="معاينة الصورة" class="image-preview rounded-lg border">`;
                 };
                 reader.readAsDataURL(file);
+            } else if (url) {
+                preview.innerHTML = `<img src="${url}" alt="معاينة الصورة" class="image-preview rounded-lg border">`;
+            } else {
+                customImageFile = document.getElementById('customImage').files[0];
+                if (customImageFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="معاينة الصورة" class="image-preview rounded-lg border">`;
+                    };
+                    reader.readAsDataURL(customImageFile);
+                }
             }
         }
 
         // تهيئة أيام الأسبوع
-        function initializeWeekDays() {
+        function initializeWeekDays(excluded = []) {
             const weekDays = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
             const container = document.getElementById('weekDays');
             container.innerHTML = '';
+            excludedDays = excluded;
             
             weekDays.forEach((day, index) => {
+                const isExcluded = excluded.includes(index);
                 const div = document.createElement('div');
-                div.className = 'day-checkbox flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer';
+                div.className = `day-checkbox flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer ${isExcluded ? 'border-red-300 bg-red-50' : ''}`;
                 div.onclick = () => toggleDay(index, div);
                 div.innerHTML = `
-                    <input type="checkbox" id="day${index}" checked class="mr-2">
+                    <input type="checkbox" id="day${index}" ${isExcluded ? '' : 'checked'} class="mr-2">
                     <label for="day${index}" class="text-sm cursor-pointer">${day}</label>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // تبديل اليوم
+        // تبديل اليوم (تم تحديث هذه الدالة لمنع التكرار)
         function toggleDay(dayIndex, element) {
             const checkbox = element.querySelector('input');
             checkbox.checked = !checkbox.checked;
             
+            const indexInArray = excludedDays.indexOf(dayIndex);
+
             if (checkbox.checked) {
-                excludedDays = excludedDays.filter(day => day !== dayIndex);
-                element.className = 'day-checkbox flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer';
+                // إذا كان موجودًا في القائمة المستبعدة، قم بإزالته
+                if (indexInArray !== -1) {
+                    excludedDays.splice(indexInArray, 1);
+                }
+                element.classList.remove('border-red-300', 'bg-red-50');
             } else {
-                excludedDays.push(dayIndex);
-                element.className = 'day-checkbox flex items-center p-2 border border-red-300 bg-red-50 rounded-lg cursor-pointer';
+                // إذا لم يكن موجودًا في القائمة، قم بإضافته
+                if (indexInArray === -1) {
+                    excludedDays.push(dayIndex);
+                }
+                element.classList.add('border-red-300', 'bg-red-50');
             }
             
             calculateEndDate();
         }
 
-        // حساب تاريخ الانتهاء
-        function calculateEndDate() {
-            const startDateInput = document.getElementById('startDate');
-            if (!startDateInput.value || !selectedPeriod) return;
+        // دالة مساعدة لحساب تاريخ الانتهاء
+        function getEndDate(startDate, period, excludedDays) {
+            if (!startDate || !period) return null;
             
-            const startDate = new Date(startDateInput.value);
+            const start = new Date(startDate);
             let duration = 0;
             
-            switch (selectedPeriod) {
+            switch (period) {
                 case 'week': duration = 7; break;
                 case 'twoWeeks': duration = 14; break;
+                case 'month': duration = 28; break;
                 case 'fourWeeks': duration = 28; break;
                 case 'tenDays': duration = 10; break;
                 case 'twentyDays': duration = 20; break;
                 case 'thirtyDays': duration = 30; break;
-                case 'month': duration = 28; break;
-                case 'custom': 
-                    const customDuration = prompt('كم يوم مدة الاشتراك المخصص؟');
-                    duration = parseInt(customDuration) || 0; 
-                    break;
             }
             
-            if (duration === 0) return;
+            if (duration === 0) return null;
             
-            let currentDate = new Date(startDate);
+            let currentDate = new Date(start);
             let deliveryDays = 0;
             
             while (deliveryDays < duration) {
@@ -641,9 +666,17 @@
                 }
             }
             
-            const endDate = currentDate;
+            return currentDate;
+        }
+
+        // حساب تاريخ الانتهاء وعرضه
+        function calculateEndDate() {
+            const startDateInput = document.getElementById('startDate');
+            if (!startDateInput.value || !selectedPeriod) return;
+
+            const startDate = new Date(startDateInput.value);
+            const endDate = getEndDate(startDate, selectedPeriod, excludedDays);
             
-            // عرض ملخص التواريخ بالميلادي العربي
             const summary = document.getElementById('datesSummary');
             summary.style.display = 'block';
             summary.innerHTML = `
@@ -651,10 +684,24 @@
                 <div class="space-y-1 text-sm">
                     <div><strong>تاريخ البدء:</strong> ${startDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
                     <div><strong>تاريخ الانتهاء:</strong> ${endDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
-                    <div><strong>عدد أيام التوصيل:</strong> ${duration} يوم</div>
+                    <div><strong>عدد أيام التوصيل:</strong> ${getDuration(selectedPeriod)} يوم</div>
                     ${excludedDays.length > 0 ? `<div><strong>الأيام المستبعدة:</strong> ${excludedDays.map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
                 </div>
             `;
+        }
+
+        // دالة مساعدة للحصول على مدة الاشتراك بالأيام
+        function getDuration(period) {
+            switch (period) {
+                case 'week': return 7;
+                case 'twoWeeks': return 14;
+                case 'month': return 28;
+                case 'fourWeeks': return 28;
+                case 'tenDays': return 10;
+                case 'twentyDays': return 20;
+                case 'thirtyDays': return 30;
+                default: return 0;
+            }
         }
 
         // تحديث السعر الإجمالي
@@ -666,7 +713,6 @@
             document.getElementById('deliveryPriceDisplay').textContent = deliveryPrice + ' د.ك';
             document.getElementById('totalPriceDisplay').textContent = totalPrice + ' د.ك';
             
-            // إظهار ملاحظة التوصيل المجاني
             const freeDeliveryNote = document.getElementById('freeDeliveryNote');
             if (deliveryPrice === 0) {
                 freeDeliveryNote.classList.remove('hidden');
@@ -674,8 +720,6 @@
                 freeDeliveryNote.classList.add('hidden');
             }
         }
-
-
 
         // عرض الصورة
         function showImage(imageSrc) {
@@ -692,13 +736,35 @@
                 return;
             }
             
+            const subscriptionId = document.getElementById('subscriptionId').value;
+            const isEditing = !!subscriptionId;
+            let customImageUrl = null;
+
+            if (selectedSubscription.isCustom && customImageFile) {
+                try {
+                    const storageRef = storage.ref();
+                    const imageRef = storageRef.child(`custom_images/${customImageFile.name}_${new Date().getTime()}`);
+                    const snapshot = await imageRef.put(customImageFile);
+                    customImageUrl = await snapshot.ref.getDownloadURL();
+                } catch (error) {
+                    console.error('Error uploading custom image:', error);
+                    alert('حدث خطأ في رفع الصورة المخصصة. يرجى المحاولة مرة أخرى.');
+                    return;
+                }
+            } else if (isEditing && selectedSubscription.isCustom && selectedSubscription.image) {
+                customImageUrl = selectedSubscription.image;
+            }
+
             // جمع البيانات
             const formData = {
                 customerName: document.getElementById('customerName').value,
                 phoneNumber: document.getElementById('phoneNumber').value,
                 addressType: addressType,
                 address: getAddressData(),
-                subscription: selectedSubscription,
+                subscription: {
+                    ...selectedSubscription,
+                    image: customImageUrl || (selectedSubscription.image ? `./${selectedSubscription.image}` : null)
+                },
                 period: selectedPeriod,
                 price: selectedPrice,
                 startDate: document.getElementById('startDate').value,
@@ -706,16 +772,23 @@
                 excludedDays: excludedDays,
                 deliveryPrice: parseFloat(document.getElementById('deliveryPrice').value) || 0,
                 totalPrice: selectedPrice + (parseFloat(document.getElementById('deliveryPrice').value) || 0),
-                createdAt: new Date(),
-                status: 'pending'
             };
+
+            if (!isEditing) {
+                formData.createdAt = new Date();
+                formData.status = 'pending';
+            }
             
             try {
-                // حفظ في Firebase
-                const docRef = await db.collection('subscriptions').add(formData);
+                if (isEditing) {
+                    await db.collection('subscriptions').doc(subscriptionId).update(formData);
+                } else {
+                    const docRef = await db.collection('subscriptions').add(formData);
+                    formData.id = docRef.id;
+                }
                 
                 // إنشاء رابط العميل - رابط كامل للواتساب
-                const customerLink = `https://figsandolives.github.io/ishtrak/sign.html?customer=${docRef.id}`;
+                const customerLink = `https://figsandolives.github.io/ishtrak/sign.html?customer=${formData.id || subscriptionId}`;
                 
                 // إنشاء رسالة الواتساب
                 const whatsappMessage = `تم تعبئة بيانات استمارة الاشتراك بنجاح،
@@ -732,8 +805,7 @@ ${customerLink}`;
                 // فتح الواتساب في نافذة جديدة
                 window.open(whatsappUrl, '_blank');
                 
-                // إظهار رسالة النجاح
-                alert('تم إنشاء الاستمارة بنجاح! تم فتح الواتساب لإرسال الرابط للعميل.');
+                alert('تم إنشاء/تحديث الاستمارة بنجاح! تم فتح الواتساب لإرسال الرابط للعميل.');
                 
                 // تحديث قائمة الاستمارات
                 loadSubscriptions();
@@ -744,37 +816,22 @@ ${customerLink}`;
             }
         });
 
-
-
-        // تحويل Data URL إلى Blob
-        function dataURLtoBlob(dataURL) {
-            const arr = dataURL.split(',');
-            const mime = arr[0].match(/:(.*?);/)[1];
-            const bstr = atob(arr[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], { type: mime });
-        }
-
         // الحصول على بيانات العنوان
         function getAddressData() {
             const address = {
-                area: document.getElementById('area').value,
-                block: document.getElementById('block').value,
-                street: document.getElementById('street').value,
+                area: document.getElementById('area')?.value,
+                block: document.getElementById('block')?.value,
+                street: document.getElementById('street')?.value,
                 avenue: document.getElementById('avenue')?.value || '',
                 nearbyBuilding: document.getElementById('nearbyBuilding')?.value || ''
             };
             
             if (addressType === 'house') {
-                address.houseNumber = document.getElementById('houseNumber').value;
+                address.houseNumber = document.getElementById('houseNumber')?.value;
             } else {
-                address.buildingName = document.getElementById('buildingName').value;
-                address.floor = document.getElementById('floor').value;
-                address.apartment = document.getElementById('apartment').value;
+                address.buildingName = document.getElementById('buildingName')?.value;
+                address.floor = document.getElementById('floor')?.value;
+                address.apartment = document.getElementById('apartment')?.value;
             }
             
             return address;
@@ -801,12 +858,17 @@ ${customerLink}`;
                     const data = doc.data();
                     const div = document.createElement('div');
                     div.className = 'bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow';
+                    
+                    // تحويل كائن Firestore Timestamp إلى كائن Date
+                    const createdAtDate = data.createdAt ? new Date(data.createdAt.seconds * 1000) : new Date();
+
                     div.innerHTML = `
                         <div class="flex justify-between items-start mb-4">
                             <h3 class="font-semibold text-lg text-gray-800">${data.customerName}</h3>
                             <span class="px-3 py-1 text-xs font-medium rounded-full ${data.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">${data.status === 'approved' ? 'معتمد' : 'في الانتظار'}</span>
                         </div>
                         <div class="space-y-2 text-sm text-gray-600 mb-4">
+                            <div><strong>تاريخ الإنشاء:</strong> ${createdAtDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' })}</div>
                             <div><strong>الهاتف:</strong> ${data.phoneNumber}</div>
                             <div><strong>الاشتراك:</strong> ${data.subscription.name}</div>
                             <div><strong>المدة:</strong> ${getPeriodText(data.period)}</div>
@@ -814,7 +876,7 @@ ${customerLink}`;
                             <div><strong>تاريخ البدء:</strong> ${new Date(data.startDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="sendToCustomer('${doc.id}')" class="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors">📤 إرسال للعميل</button>
+                            <button onclick="sendToCustomer('${doc.id}', '${data.phoneNumber}')" class="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors">📤 إرسال للعميل</button>
                             <button onclick="editSubscription('${doc.id}')" class="flex-1 py-2 px-4 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 transition-colors">✏️ تعديل</button>
                             <button onclick="deleteSubscription('${doc.id}')" class="flex-1 py-2 px-4 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors">🗑️ حذف</button>
                             ${data.status === 'approved' ? `<button onclick="printSubscription('${doc.id}')" class="py-2 px-4 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors">🖨️ طباعة</button>` : ''}
@@ -828,22 +890,54 @@ ${customerLink}`;
             }
         }
 
-        // إرسال للعميل - رابط كامل
-        function sendToCustomer(id) {
+        // إرسال للعميل
+        function sendToCustomer(id, phoneNumber) {
             const customerLink = `https://figsandolives.github.io/ishtrak/sign.html?customer=${id}`;
+            const whatsappMessage = `تم تعبئة بيانات استمارة الاشتراك بنجاح،
+يرجى الضغط على الرابط التالي للاعتماد والتوقيع:
+${customerLink}`;
+            const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+            const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`;
             
-            // نسخ الرابط إلى الحافظة
-            navigator.clipboard.writeText(customerLink).then(() => {
-                alert(`تم نسخ رابط العميل إلى الحافظة:\n${customerLink}\n\nيمكنك إرسال هذا الرابط للعميل للتوقيع والاعتماد.`);
-            }).catch(() => {
-                alert(`رابط العميل:\n${customerLink}\n\nيرجى نسخ هذا الرابط وإرساله للعميل للتوقيع والاعتماد.`);
-            });
+            window.open(whatsappUrl, '_blank');
         }
 
         // تعديل الاشتراك
-        function editSubscription(id) {
-            // يمكن تطوير هذه الوظيفة لاحقاً
-            alert('وظيفة التعديل قيد التطوير');
+        async function editSubscription(id) {
+            try {
+                const doc = await db.collection('subscriptions').doc(id).get();
+                if (!doc.exists) {
+                    alert('الاشتراك غير موجود');
+                    return;
+                }
+                const data = doc.data();
+
+                // تهيئة النموذج للوضع التعديل
+                editingSubscriptionId = id;
+                document.getElementById('subscriptionId').value = id;
+                document.getElementById('modalTitle').textContent = '✏️ تعديل استمارة الاشتراك';
+                document.getElementById('submitBtn').textContent = '✅ تحديث الاستمارة';
+                openModal('newSubscriptionModal');
+
+                // تعبئة البيانات في النموذج
+                document.getElementById('customerName').value = data.customerName;
+                document.getElementById('phoneNumber').value = data.phoneNumber;
+                selectAddressType(data.addressType);
+                generateAddressFields(data.addressType, data.address);
+                initializeSubscriptionTypes(data.subscription.id);
+                selectSubscription(subscriptionTypes.find(s => s.id === data.subscription.id));
+                selectPeriod(data.period, data.price);
+                document.getElementById('startDate').value = data.startDate;
+                document.getElementById('deliveryTime').value = data.deliveryTime;
+                initializeWeekDays(data.excludedDays);
+                document.getElementById('deliveryPrice').value = data.deliveryPrice;
+                updateTotalPrice();
+                calculateEndDate();
+
+            } catch (error) {
+                console.error('خطأ في تعديل الاشتراك:', error);
+                alert('حدث خطأ أثناء محاولة تعديل الاشتراك.');
+            }
         }
 
         // حذف الاشتراك
@@ -870,11 +964,37 @@ ${customerLink}`;
                 }
                 
                 const data = doc.data();
-                generatePrintContent(data);
                 
-                // طباعة الصفحة
+                // تحديد عدد المرات التي سيتكرر فيها المحتوى بناءً على مدة الاشتراك
+                let repeatCount = 1;
+                switch (data.period) {
+                    case 'week':
+                    case 'tenDays':
+                        repeatCount = 1;
+                        break;
+                    case 'twoWeeks':
+                    case 'twentyDays':
+                        repeatCount = 2;
+                        break;
+                    case 'fourWeeks':
+                    case 'thirtyDays':
+                    case 'month':
+                        repeatCount = 3;
+                        break;
+                }
+
+                await generatePrintContent(data, repeatCount);
+                
+                // يتم إخفاء المحتوى الرئيسي وعرض المحتوى المخصص للطباعة فقط
+                document.getElementById('mainPage').classList.add('hidden');
+                document.getElementById('printArea').classList.remove('hidden');
+
                 setTimeout(() => {
                     window.print();
+                    // بعد الطباعة أو الإلغاء، يتم إعادة إظهار المحتوى الرئيسي
+                    document.getElementById('mainPage').classList.remove('hidden');
+                    document.getElementById('printArea').classList.add('hidden');
+                    document.getElementById('printArea').innerHTML = ''; // تنظيف المحتوى
                 }, 500);
                 
             } catch (error) {
@@ -883,108 +1003,121 @@ ${customerLink}`;
             }
         }
 
+        // دالة جديدة لتنسيق نطاق الوقت
+        function formatDeliveryTimeRange(timeRange) {
+            const [start, end] = timeRange.split('-');
+            
+            let startHour = parseInt(start);
+            let endHour = parseInt(end);
+
+            let startPeriod = startHour < 12 ? 'صباحاً' : 'ظهراً';
+            let endPeriod = endHour < 12 ? 'صباحاً' : (endHour === 12 ? 'ظهراً' : 'مساءً');
+
+            let start12 = startHour > 12 ? startHour - 12 : startHour;
+            let end12 = endHour > 12 ? endHour - 12 : endHour;
+            if (start12 === 0) start12 = 12; // 12 AM
+            if (end12 === 0) end12 = 12; // 12 AM
+            if (startHour === 12) startPeriod = 'ظهراً'; // 12 PM
+            if (endHour === 12) endPeriod = 'ظهراً'; // 12 PM
+            
+            // تحويل الأرقام الإنجليزية إلى عربية
+            const toArabicNumerals = (num) => num.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+            
+            return `من ${toArabicNumerals(start12)} ${startPeriod} إلى ${toArabicNumerals(end12)} ${endPeriod}`;
+        }
+
+
         // إنشاء محتوى الطباعة
-        function generatePrintContent(data) {
+        async function generatePrintContent(data, repeatCount) {
             const printArea = document.getElementById('printArea');
-            const subscriptionNumber = Math.floor(Math.random() * 10000) + 1000;
+            printArea.innerHTML = ''; // تنظيف المحتوى القديم
             
-            // تحديد عدد نسخ جدول الاشتراك
-            let copies = 1;
-            if (data.period === 'twoWeeks' || data.period === 'twentyDays') {
-                copies = 2;
-            } else if (data.period === 'month' || data.period === 'thirtyDays' || data.period === 'fourWeeks') {
-                copies = 3;
-            }
+            const startDateFormatted = new Date(data.startDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' });
+            const startDateObj = new Date(data.startDate);
+            const endDateObj = getEndDate(startDateObj, data.period, data.excludedDays);
+            const endDateFormatted = endDateObj.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' });
             
-            let printHTML = `
-                <!-- صفحة الاستمارة -->
-                <div class="print-page">
-                    <div class="text-center mb-8">
-                        <h1 class="text-3xl font-bold mb-2">استمارة اشتراك</h1>
-                        <p class="text-lg text-gray-600">رقم الاستمارة: ${subscriptionNumber}</p>
+            // --- إنشاء محتوى الصفحة الأولى (الاستمارة الكاملة) ---
+            const mainPageHtml = `
+                <div class="print-form-page print-page-break">
+                    <div class="text-center mb-4">
+                        <h1 class="text-3xl font-bold mb-1">استمارة اشتراك</h1>
+                        <p class="text-sm text-gray-600">رقم الاستمارة: ${Math.floor(Math.random() * 10000) + 1000}</p>
                     </div>
                     
-                    <div class="space-y-6">
-                        <!-- بيانات العميل -->
-                        <div class="border border-gray-300 rounded-lg p-4">
-                            <h3 class="text-xl font-semibold mb-4 text-blue-800">بيانات العميل</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><strong>اسم الزبون:</strong> ${data.customerName}</div>
-                                <div><strong>رقم الهاتف:</strong> ${data.phoneNumber}</div>
-                            </div>
+                    <!-- بيانات العميل -->
+                    <div class="print-section">
+                        <h3 class="text-lg font-semibold mb-2 text-blue-800">بيانات العميل</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div><strong>الاسم:</strong> ${data.customerName}</div>
+                            <div><strong>الهاتف:</strong> ${data.phoneNumber}</div>
                         </div>
-                        
-                        <!-- العنوان -->
-                        <div class="border border-gray-300 rounded-lg p-4">
-                            <h3 class="text-xl font-semibold mb-4 text-green-800">العنوان</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><strong>النوع:</strong> ${data.addressType === 'house' ? 'بيت' : 'شقة'}</div>
-                                <div><strong>المنطقة:</strong> ${data.address.area}</div>
-                                <div><strong>القطعة:</strong> ${data.address.block}</div>
-                                <div><strong>الشارع:</strong> ${data.address.street}</div>
-                                ${data.address.avenue ? `<div><strong>الجادة:</strong> ${data.address.avenue}</div>` : ''}
-                                ${data.addressType === 'house' ? 
-                                    `<div><strong>رقم المنزل:</strong> ${data.address.houseNumber}</div>` :
-                                    `<div><strong>البناية:</strong> ${data.address.buildingName}</div>
-                                     <div><strong>الطابق:</strong> ${data.address.floor}</div>
-                                     <div><strong>الشقة:</strong> ${data.address.apartment}</div>`
-                                }
-                                ${data.address.nearbyBuilding ? `<div><strong>مبنى مجاور:</strong> ${data.address.nearbyBuilding}</div>` : ''}
-                            </div>
+                    </div>
+                    
+                    <!-- العنوان -->
+                    <div class="print-section mt-4">
+                        <h3 class="text-lg font-semibold mb-2 text-green-800">العنوان</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div><strong>النوع:</strong> ${data.addressType === 'house' ? 'بيت' : 'شقة'}</div>
+                            <div><strong>المنطقة:</strong> ${data.address.area}</div>
+                            <div><strong>القطعة:</strong> ${data.address.block}</div>
+                            <div><strong>الشارع:</strong> ${data.address.street}</div>
+                            ${data.address.avenue ? `<div><strong>الجادة:</strong> ${data.address.avenue}</div>` : ''}
+                            ${data.addressType === 'house' ? 
+                                `<div><strong>رقم المنزل:</strong> ${data.address.houseNumber}</div>` :
+                                `<div><strong>البناية:</strong> ${data.address.buildingName}</div>
+                                 <div><strong>الطابق:</strong> ${data.address.floor}</div>
+                                 <div><strong>الشقة:</strong> ${data.address.apartment}</div>`
+                            }
                         </div>
-                        
-                        <!-- تفاصيل الاشتراك -->
-                        <div class="border border-gray-300 rounded-lg p-4">
-                            <h3 class="text-xl font-semibold mb-4 text-purple-800">تفاصيل الاشتراك</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><strong>نوع الاشتراك:</strong> ${data.subscription.name}</div>
-                                <div><strong>المدة:</strong> ${getPeriodText(data.period)}</div>
-                                <div><strong>تاريخ البدء:</strong> ${new Date(data.startDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
-                                <div><strong>وقت التوصيل:</strong> ${data.deliveryTime}</div>
-                                <div><strong>سعر الاشتراك:</strong> ${data.price} د.ك</div>
-                                <div><strong>سعر التوصيل:</strong> ${data.deliveryPrice} د.ك</div>
-                                <div><strong>الإجمالي:</strong> ${data.totalPrice} د.ك</div>
-                                ${data.excludedDays.length > 0 ? `<div class="col-span-2"><strong>الأيام المستبعدة:</strong> ${data.excludedDays.map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
-                            </div>
+                    </div>
+                    
+                    <!-- تفاصيل الاشتراك -->
+                    <div class="print-section mt-4">
+                        <h3 class="text-lg font-semibold mb-2 text-purple-800">تفاصيل الاشتراك</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div><strong>نوع الاشتراك:</strong> ${data.subscription.name}</div>
+                            <div><strong>المدة:</strong> ${getPeriodText(data.period)}</div>
+                            <div><strong>تاريخ البدء:</strong> ${startDateFormatted}</div>
+                            <div><strong>تاريخ الانتهاء:</strong> ${endDateFormatted}</div>
+                            <div><strong>وقت التوصيل:</strong> ${formatDeliveryTimeRange(data.deliveryTime)}</div>
+                            <div><strong>الإجمالي:</strong> ${data.totalPrice} د.ك</div>
+                            ${data.excludedDays.length > 0 ? `<div class="col-span-2"><strong>الأيام المستبعدة:</strong> ${[...new Set(data.excludedDays)].map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
                         </div>
-                        
-                        <!-- الشروط والأحكام -->
-                        <div class="border border-gray-300 rounded-lg p-4">
-                            <h3 class="text-xl font-semibold mb-4 text-red-800">الشروط والأحكام</h3>
-                            <div class="space-y-2 text-sm">
-                                <div>• المبلغ المدفوع لا يسترد.</div>
-                                <div>• إذا تم إلغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون أو مطعم التين الطبيعي في أي وقت.</div>
-                            </div>
+                    </div>
+
+                    <!-- الشروط والأحكام -->
+                    <div class="print-section mt-4">
+                        <h3 class="text-lg font-semibold mb-2 text-red-800">الشروط والأحكام</h3>
+                        <div class="space-y-1 text-xs">
+                            <div>• المبلغ المدفوع لا يسترد.</div>
+                            <div>• إذا تم إلغاء الاشتراك لأي سبب كان من طرف العميل يتم حساب المبلغ المتبقي من الاشتراك ويصبح كوبون مشتريات للعميل يمكنه الشراء به من مخبز التين والزيتون أو مطعم التين الطبيعي في أي وقت.</div>
                         </div>
-                        
-                        <!-- التوقيع -->
-                        <div class="border border-gray-300 rounded-lg p-4">
-                            <h3 class="text-xl font-semibold mb-4">توقيع العميل</h3>
-                            ${data.signatureURL ? `<img src="${data.signatureURL}" alt="توقيع العميل" class="border border-gray-300 rounded max-h-32">` : '<div class="border border-gray-300 rounded h-32 flex items-center justify-center text-gray-500">لا يوجد توقيع</div>'}
-                        </div>
+                    </div>
+                    
+                    <!-- التوقيع -->
+                    <div class="print-section mt-4">
+                        <h3 class="text-lg font-semibold mb-2">توقيع العميل</h3>
+                        ${data.signatureURL ? `<img src="${data.signatureURL}" alt="توقيع العميل" class="border border-gray-300 rounded max-h-32 w-full object-contain">` : '<div class="border border-gray-300 rounded h-32 flex items-center justify-center text-gray-500">لا يوجد توقيع</div>'}
                     </div>
                 </div>
             `;
             
-            // إضافة نسخ جدول الاشتراك
-            for (let i = 0; i < copies; i++) {
-                if (data.subscription.image) {
-                    printHTML += `
-                        <div class="print-page">
-                            <div class="text-center mb-4">
-                                <h2 class="text-2xl font-bold">جدول الاشتراك - نسخة ${i + 1}</h2>
-                            </div>
-                            <div class="flex justify-center">
-                                <img src="${data.subscription.image}" alt="جدول الاشتراك" class="max-w-full max-h-full object-contain">
-                            </div>
+            printArea.innerHTML += mainPageHtml;
+            
+            // --- تكرار جدول الاشتراك في الصفحات التالية (بدون إطار أو عنوان) ---
+            if (data.subscription.image) {
+                for (let i = 0; i < repeatCount; i++) {
+                    const tablePageHtml = `
+                        <div class="print-schedule-page print-page-break">
+                            <img src="${data.subscription.image}" alt="جدول الاشتراك" class="print-schedule-image">
                         </div>
                     `;
+                    printArea.innerHTML += tablePageHtml;
                 }
             }
-            
-            printArea.innerHTML = printHTML;
-            printArea.classList.remove('hidden');
         }
+
 
         // الحصول على نص الفترة
         function getPeriodText(period) {
@@ -1017,11 +1150,9 @@ ${customerLink}`;
                 closeModal(event.target.id);
             }
         });
-
-
         
         // تحميل الاستمارات عند تحميل الصفحة
         window.addEventListener('load', loadSubscriptions);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b7193530b87cd5',t:'MTc1NDU3MzExMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
