@@ -76,6 +76,7 @@ function setupFormPage() {
     const deliveryDaysCheckboxes = document.querySelectorAll('input[name="delivery-day"]');
     const totalPriceDisplay = document.getElementById('total-price-display');
     const deliveryPriceInput = document.getElementById('delivery-price');
+    const deliveryTimeSelect = document.getElementById('delivery-time');
     
     let selectedAddressType = 'بيت';
     let calculatedEndDate = '';
@@ -219,6 +220,7 @@ function setupFormPage() {
             startDate: startDateInput.value,
             endDate: calculatedEndDate,
             deliveryDays: Array.from(deliveryDaysCheckboxes).filter(cb => cb.checked).map(cb => dayNames[parseInt(cb.value)]),
+            deliveryTime: deliveryTimeSelect.value,
             deliveryPrice: parseFloat(deliveryPriceInput.value) || 0,
             status: 'pending',
             signatureImageUrl: '',
@@ -265,7 +267,7 @@ function setupFormPage() {
         const whatsappMsg = `تم تعبئة بيانات استمارة الاشتراك بنجاح، يرجى الضغط على الرابط التالي للاعتماد والتوقيع: ${signUrl}`;
         const whatsappUrl = `https://wa.me/965${subscriptionData.phoneNumber}?text=${encodeURIComponent(whatsappMsg)}`;
         
-        window.location.href = whatsappUrl;
+        window.open(whatsappUrl, '_blank');
     });
 }
 
@@ -283,10 +285,22 @@ function setupSignPage() {
     const approveBtn = document.getElementById('approve-btn');
     const clearBtn = document.getElementById('clear-signature-btn');
     const summaryDiv = document.getElementById('subscription-summary');
+    const mealPlanImageDiv = document.getElementById('meal-plan-image-container');
+
+    // جعل زر "اعتمد" غير مفعل بشكل افتراضي
+    approveBtn.disabled = true;
 
     // تهيئة SignaturePad أولاً وقبل كل شيء
     const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(248, 248, 248)'
+        backgroundColor: 'rgb(248, 248, 248)',
+        onEnd: () => {
+            // تفعيل زر "اعتمد" عند بدء التوقيع
+            approveBtn.disabled = signaturePad.isEmpty();
+        },
+        onBegin: () => {
+             // تفعيل زر "اعتمد" عند بدء التوقيع
+            approveBtn.disabled = false;
+        }
     });
 
     // وظيفة لضبط حجم لوحة التوقيع
@@ -295,13 +309,15 @@ function setupSignPage() {
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear();
+        if (!signaturePad.isEmpty()) {
+            signaturePad.clear();
+        }
     }
     
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    subscriptionsRef.child(subscriptionId).once('value', (snapshot) => {
+    subscriptionsRef.child(subscriptionId).once('value', async (snapshot) => {
         const data = snapshot.val();
         if (data) {
             const totalPrice = (data.subscription.price || 0) + (data.deliveryPrice || 0);
@@ -315,21 +331,41 @@ function setupSignPage() {
                 <p><strong>تاريخ الانتهاء:</strong> ${data.endDate}</p>
                 <p><strong>السعر الإجمالي:</strong> ${totalPrice.toFixed(2)} د.ك</p>
                 <p><strong>سعر التوصيل:</strong> ${deliveryStatus}</p>
+                <p><strong>وقت التوصيل:</strong> ${data.deliveryTime || 'لم يحدد'}</p>
             `;
+
+            // عرض جدول الوجبات
+            let imageUrl = '';
+            const subIdMatch = data.subscription.type.match(/^اشتراك مخصص/i) ? '18' : data.subscription.type.match(/\d+/);
+            const subId = subIdMatch ? subIdMatch[0] : null;
+
+            if (subId === '18' && data.subscription.customImageUrl) {
+                imageUrl = data.subscription.customImageUrl;
+            } else if (subId >= 1 && subId <= 17) {
+                imageUrl = `./a${subId}.jpg`;
+            }
+
+            if (imageUrl) {
+                mealPlanImageDiv.innerHTML = `<img src="${imageUrl}" class="meal-plan-image" alt="جدول الوجبات">`;
+            } else {
+                mealPlanImageDiv.innerHTML = '<p>لا يوجد جدول وجبات لهذا الاشتراك.</p>';
+            }
+
         } else {
             summaryDiv.innerHTML = '<p>الاشتراك غير موجود أو تم حذفه.</p>';
             approveBtn.disabled = true;
         }
     });
-
     
     clearBtn.addEventListener('click', () => {
         signaturePad.clear();
+        approveBtn.disabled = true;
     });
 
     approveBtn.addEventListener('click', async () => {
         if (signaturePad.isEmpty()) {
             alert('يرجى التوقيع أولاً.');
+            approveBtn.disabled = true;
             return;
         }
         
@@ -369,11 +405,12 @@ function setupIndexPage() {
                 if (sub.status === 'approved') {
                     const card = document.createElement('div');
                     card.classList.add('subscription-card');
+                    const totalPrice = (sub.subscription.price || 0) + (sub.deliveryPrice || 0);
                     card.innerHTML = `
                         <h3>استمارة #${id.substring(1, 15)}</h3>
                         <p><strong>العميل:</strong> ${sub.customerName}</p>
                         <p><strong>الاشتراك:</strong> ${sub.subscription.type}</p>
-                        <p><strong>السعر الإجمالي:</strong> ${(sub.subscription.price + sub.deliveryPrice).toFixed(2)} د.ك</p>
+                        <p><strong>السعر الإجمالي:</strong> ${totalPrice.toFixed(2)} د.ك</p>
                         <button onclick="editSubscription('${id}')">تعديل</button>
                         <button onclick="deleteSubscription('${id}')">حذف</button>
                         <button onclick="printSubscription('${id}')">طباعة</button>
@@ -409,34 +446,41 @@ async function printSubscription(id) {
     printWindow.document.write('<html><head><title>طباعة استمارة اشتراك</title>');
     printWindow.document.write('<style>');
     printWindow.document.write(`
-        body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; }
-        .page { width: 21cm; min-height: 29.7cm; margin: auto; padding: 2cm; }
+        @page { size: A4; margin: 20mm; }
+        body { font-family: 'Arial', sans-serif; direction: rtl; text-align: right; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 19cm; margin: 0 auto; padding: 1cm; box-sizing: border-box; }
         h1, h2 { text-align: center; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        h1 { border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
-        .signature-container { margin-top: 50px; text-align: center; }
-        .signature-image { max-width: 300px; border: 1px dashed #333; padding: 10px; }
+        td:first-child { font-weight: bold; width: 35%; }
+        .terms-and-conditions { margin-top: 30px; border: 1px solid #ccc; padding: 10px; }
+        .terms-and-conditions h2 { margin-top: 0; }
+        .signature-container { margin-top: 20px; text-align: center; }
+        .signature-container p { margin: 0; font-weight: bold; }
+        .signature-image { max-width: 300px; max-height: 150px; margin-top: 10px; }
+        .page-break { page-break-before: always; }
+        img.subscription-image { width: 100%; height: auto; display: block; }
     `);
     printWindow.document.write('</style>');
     printWindow.document.write('</head><body>');
-    printWindow.document.write('<div class="page">');
+
+    // الصفحة الأولى: تفاصيل الاستمارة
+    printWindow.document.write('<div class="container">');
     printWindow.document.write(`<h1>استمارة اشتراك #${id.substring(1, 15)}</h1>`);
-    printWindow.document.write('<h2>بيانات العميل</h2>');
     printWindow.document.write('<table>');
-    printWindow.document.write(`<tr><td><strong>الاسم:</strong></td><td>${sub.customerName}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>رقم الهاتف:</strong></td><td>${sub.phoneNumber}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>العنوان:</strong></td><td>${sub.address.type} - ${Object.values(sub.address.details).filter(val => val).join(', ')}</td></tr>`);
-    printWindow.document.write('</table>');
-    printWindow.document.write('<h2>تفاصيل الاشتراك</h2>');
-    printWindow.document.write('<table>');
-    printWindow.document.write(`<tr><td><strong>نوع الاشتراك:</strong></td><td>${sub.subscription.type}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>الفترة:</strong></td><td>${sub.subscription.period}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>تاريخ البدء:</strong></td><td>${sub.startDate}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>تاريخ الانتهاء:</strong></td><td>${sub.endDate}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>أيام التوصيل:</strong></td><td>${sub.deliveryDays.join(', ')}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>سعر الاشتراك:</strong></td><td>${sub.subscription.price} د.ك</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>سعر التوصيل:</strong></td><td>${sub.deliveryPrice > 0 ? sub.deliveryPrice : 'مجاني'}</td></tr>`);
-    printWindow.document.write(`<tr><td><strong>الإجمالي:</strong></td><td>${(sub.subscription.price + sub.deliveryPrice).toFixed(2)} د.ك</td></tr>`);
+    printWindow.document.write(`<tr><td>اسم العميل:</td><td>${sub.customerName}</td></tr>`);
+    printWindow.document.write(`<tr><td>رقم الهاتف:</td><td>${sub.phoneNumber}</td></tr>`);
+    printWindow.document.write(`<tr><td>العنوان:</td><td>${sub.address.type} - ${Object.values(sub.address.details).filter(val => val).join(', ')}</td></tr>`);
+    printWindow.document.write(`<tr><td>نوع الاشتراك:</td><td>${sub.subscription.type}</td></tr>`);
+    printWindow.document.write(`<tr><td>الفترة:</td><td>${sub.subscription.period}</td></tr>`);
+    printWindow.document.write(`<tr><td>تاريخ البدء:</td><td>${sub.startDate}</td></tr>`);
+    printWindow.document.write(`<tr><td>تاريخ الانتهاء:</td><td>${sub.endDate}</td></tr>`);
+    printWindow.document.write(`<tr><td>أيام التوصيل:</td><td>${sub.deliveryDays.join(', ')}</td></tr>`);
+    printWindow.document.write(`<tr><td>وقت التوصيل:</td><td>${sub.deliveryTime || 'لم يحدد'}</td></tr>`);
+    printWindow.document.write(`<tr><td>سعر الاشتراك:</td><td>${sub.subscription.price} د.ك</td></tr>`);
+    printWindow.document.write(`<tr><td>سعر التوصيل:</td><td>${sub.deliveryPrice > 0 ? sub.deliveryPrice : 'مجاني'}</td></tr>`);
+    printWindow.document.write(`<tr><td>الإجمالي:</td><td>${((sub.subscription.price || 0) + (sub.deliveryPrice || 0)).toFixed(2)} د.ك</td></tr>`);
     printWindow.document.write('</table>');
 
     printWindow.document.write(`
@@ -450,46 +494,46 @@ async function printSubscription(id) {
             </ul>
         </div>
     `);
-    
+
     if (sub.signatureImageUrl) {
-        printWindow.document.write(`<div class="signature-container"><h3>توقيع العميل</h3><img src="${sub.signatureImageUrl}" class="signature-image"/></div>`);
+        printWindow.document.write(`
+            <div class="signature-container">
+                <p>توقيع العميل</p>
+                <img src="${sub.signatureImageUrl}" class="signature-image"/>
+            </div>
+        `);
+    } else {
+        printWindow.document.write(`
+            <div class="signature-container">
+                <p>لم يتم التوقيع</p>
+            </div>
+        `);
     }
 
     printWindow.document.write('</div>');
 
-    let imageUrls = [];
-    let subIdNumeric = '';
-    const subType = sub.subscription.type;
-    
-    // محاولة استخراج الرقم من بداية اسم الاشتراك
-    const match = subType.match(/^\d+/);
-    if (match) {
-        subIdNumeric = match[0];
-    } else {
-      // إذا كان الاشتراك المخصص، تحقق من اسم الاشتراك لتعيين القيمة
-      if (subType.includes('اشتراك مخصص')) {
-        subIdNumeric = '18';
-      }
-    }
-
-    const period = sub.subscription.period;
+    // تحديد عدد الصفحات الإضافية بناءً على فترة الاشتراك
     let copies = 0;
+    const period = sub.subscription.period;
     if (period.includes('اسبوع') || period.includes('10أيام')) copies = 1;
     if (period.includes('2اسبوع') || period.includes('20يوم')) copies = 2;
     if (period.includes('4اسابيع') || period.includes('30يوم')) copies = 3;
 
-    // معالجة الاشتراك المخصص (id=18)
-    if (subIdNumeric === '18' && sub.subscription.customImageUrl) {
-        imageUrls.push(sub.subscription.customImageUrl);
-    } else if (subIdNumeric >= 1 && subIdNumeric <= 17) {
-        const imagePath = `a${subIdNumeric}.jpg`;
-        imageUrls.push(`https://firebasestorage.googleapis.com/v0/b/${firebaseConfig.storageBucket}/o/${encodeURIComponent(imagePath)}?alt=media`);
+    // تحديد مسار الصورة بناءً على نوع الاشتراك
+    let imageUrl = '';
+    const subIdMatch = sub.subscription.type.match(/^اشتراك مخصص/i) ? '18' : sub.subscription.type.match(/\d+/);
+    const subId = subIdMatch ? subIdMatch[0] : null;
+
+    if (subId === '18' && sub.subscription.customImageUrl) {
+        imageUrl = sub.subscription.customImageUrl;
+    } else if (subId >= 1 && subId <= 17) {
+        imageUrl = `./a${subId}.jpg`;
     }
 
-    if (imageUrls.length > 0) {
+    if (imageUrl) {
         for (let i = 0; i < copies; i++) {
-            printWindow.document.write('<div class="page" style="page-break-before: always;">');
-            printWindow.document.write(`<img src="${imageUrls[0]}" style="width: 100%;">`);
+            printWindow.document.write('<div class="container page-break">');
+            printWindow.document.write(`<img src="${imageUrl}" class="subscription-image" alt="صورة الاشتراك">`);
             printWindow.document.write('</div>');
         }
     }
