@@ -10,7 +10,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 50vh;
+    min-height: 100vh;
+    padding: 2rem;
 }
 
 .spinner {
@@ -32,13 +33,25 @@ body {
     border: 2px dashed #d1d5db;
     border-radius: 8px;
     cursor: crosshair;
-    background: #fafafa;
+    background: #ffffff;
     touch-action: none;
+    display: block;
+    width: 100%;
+    height: 200px;
+    max-width: 100%;
 }
 
 .signature-pad.signed {
     border-color: #10b981;
     background: #f0fdf4;
+}
+
+/* تحسين عرض الكانفاس */
+canvas {
+    display: block;
+    border-radius: 8px;
+    max-width: 100%;
+    height: auto;
 }
 
 /* تحسينات الاستجابة */
@@ -50,14 +63,72 @@ body {
     
     .text-4xl {
         font-size: 2rem;
+        line-height: 2.5rem;
+    }
+    
+    .text-2xl {
+        font-size: 1.5rem;
+        line-height: 2rem;
+    }
+    
+    .text-xl {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
     }
     
     .grid-cols-2 {
         grid-template-columns: 1fr;
     }
     
+    .md\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
     .signature-pad {
         height: 150px;
+    }
+    
+    .p-8 {
+        padding: 1.5rem;
+    }
+    
+    .p-6 {
+        padding: 1rem;
+    }
+    
+    .gap-4 {
+        gap: 0.75rem;
+    }
+    
+    .mb-8 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .mb-6 {
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .signature-pad {
+        height: 120px;
+    }
+    
+    .text-4xl {
+        font-size: 1.75rem;
+        line-height: 2.25rem;
+    }
+    
+    .flex {
+        flex-direction: column;
+    }
+    
+    .flex.gap-4 > * {
+        margin-bottom: 0.5rem;
+    }
+    
+    .flex.gap-4 > *:last-child {
+        margin-bottom: 0;
     }
 }
 
@@ -71,6 +142,11 @@ button:active {
     transform: translateY(0);
 }
 
+button:disabled {
+    transform: none;
+    cursor: not-allowed;
+}
+
 /* تحسينات النوافذ المنبثقة */
 .fixed {
     backdrop-filter: blur(4px);
@@ -80,6 +156,7 @@ button:active {
 img {
     max-width: 100%;
     height: auto;
+    border-radius: 8px;
 }
 
 /* تحسينات النصوص */
@@ -95,6 +172,10 @@ img {
     font-weight: 600;
 }
 
+.font-medium {
+    font-weight: 500;
+}
+
 /* تحسينات الألوان */
 .text-gray-800 {
     color: #1f2937;
@@ -104,8 +185,78 @@ img {
     color: #4b5563;
 }
 
+.text-gray-500 {
+    color: #6b7280;
+}
+
+.text-blue-800 {
+    color: #1e40af;
+}
+
+.text-green-800 {
+    color: #166534;
+}
+
+.text-purple-800 {
+    color: #6b21a8;
+}
+
+.text-orange-800 {
+    color: #9a3412;
+}
+
+.text-red-800 {
+    color: #991b1b;
+}
+
+.text-red-600 {
+    color: #dc2626;
+}
+
+.text-green-600 {
+    color: #16a34a;
+}
+
 .bg-gradient-to-br {
     background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+.from-blue-50 {
+    --tw-gradient-from: #eff6ff;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(239, 246, 255, 0));
+}
+
+.to-indigo-100 {
+    --tw-gradient-to: #e0e7ff;
+}
+
+/* خلفيات ملونة */
+.bg-blue-50 {
+    background-color: #eff6ff;
+}
+
+.bg-green-50 {
+    background-color: #f0fdf4;
+}
+
+.bg-purple-50 {
+    background-color: #faf5ff;
+}
+
+.bg-orange-50 {
+    background-color: #fff7ed;
+}
+
+.bg-red-50 {
+    background-color: #fef2f2;
+}
+
+.bg-gray-50 {
+    background-color: #f9fafb;
+}
+
+.bg-white {
+    background-color: #ffffff;
 }
 
 /* تحسينات الظلال */
@@ -117,9 +268,19 @@ img {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
+.shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
 /* تحسينات الانتقالات */
 .transition-all {
     transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.transition-colors {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
 }
@@ -141,6 +302,26 @@ img {
     border-radius: 0.5rem;
 }
 
+.rounded-full {
+    border-radius: 9999px;
+}
+
+.border {
+    border-width: 1px;
+}
+
+.border-2 {
+    border-width: 2px;
+}
+
+.border-dashed {
+    border-style: dashed;
+}
+
+.border-gray-300 {
+    border-color: #d1d5db;
+}
+
 /* تحسينات المسافات */
 .p-8 {
     padding: 2rem;
@@ -154,6 +335,30 @@ img {
     padding: 1rem;
 }
 
+.p-2 {
+    padding: 0.5rem;
+}
+
+.px-6 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
 .mb-8 {
     margin-bottom: 2rem;
 }
@@ -164,6 +369,31 @@ img {
 
 .mb-4 {
     margin-bottom: 1rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.ml-2 {
+    margin-left: 0.5rem;
+}
+
+.mr-2 {
+    margin-right: 0.5rem;
+}
+
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* تحسينات الشبكة */
@@ -179,10 +409,39 @@ img {
     .md\:grid-cols-2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    
+    .md\:col-span-2 {
+        grid-column: span 2 / span 2;
+    }
 }
 
 .gap-4 {
     gap: 1rem;
+}
+
+/* تحسينات الفليكس */
+.flex {
+    display: flex;
+}
+
+.flex-1 {
+    flex: 1 1 0%;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.items-start {
+    align-items: flex-start;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
 }
 
 /* تحسينات الأزرار */
@@ -194,15 +453,53 @@ img {
     cursor: not-allowed;
 }
 
+.hover\:bg-gray-600:hover {
+    background-color: #4b5563;
+}
+
+.hover\:from-green-600:hover {
+    --tw-gradient-from: #16a34a;
+}
+
+.hover\:to-green-700:hover {
+    --tw-gradient-to: #15803d;
+}
+
+.bg-gray-500 {
+    background-color: #6b7280;
+}
+
+.bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.from-green-500 {
+    --tw-gradient-from: #22c55e;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(34, 197, 94, 0));
+}
+
+.to-green-600 {
+    --tw-gradient-to: #16a34a;
+}
+
 /* تحسينات الإدخال */
 input[type="checkbox"] {
     accent-color: #dc2626;
+    width: 1rem;
+    height: 1rem;
+}
+
+.focus\:ring-red-500:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 /* تحسينات خاصة بالتوقيع */
-canvas {
-    display: block;
-    border-radius: 8px;
+#signatureStatus {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+    text-align: center;
 }
 
 /* تحسينات الطباعة */
@@ -225,4 +522,136 @@ canvas {
     .no-print {
         display: none !important;
     }
+}
+
+/* تحسينات إضافية للتوقيع */
+.signature-pad:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* تحسينات النصوص الطويلة */
+.text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+}
+
+/* إخفاء العناصر */
+.hidden {
+    display: none;
+}
+
+/* عرض العناصر كبلوك */
+.block {
+    display: block;
+}
+
+/* تحسينات الموضع */
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.fixed {
+    position: fixed;
+}
+
+.inset-0 {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.top-4 {
+    top: 1rem;
+}
+
+.right-4 {
+    right: 1rem;
+}
+
+/* تحسينات العرض والارتفاع */
+.w-full {
+    width: 100%;
+}
+
+.w-4 {
+    width: 1rem;
+}
+
+.w-10 {
+    width: 2.5rem;
+}
+
+.h-4 {
+    height: 1rem;
+}
+
+.h-10 {
+    height: 2.5rem;
+}
+
+.h-auto {
+    height: auto;
+}
+
+.max-w-4xl {
+    max-width: 56rem;
+}
+
+.max-w-md {
+    max-width: 28rem;
+}
+
+.max-w-full {
+    max-width: 100%;
+}
+
+.max-h-full {
+    max-height: 100%;
+}
+
+.min-h-screen {
+    min-height: 100vh;
+}
+
+/* تحسينات الشفافية */
+.bg-opacity-75 {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.bg-opacity-50 {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.bg-opacity-20 {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.hover\:bg-opacity-30:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* تحسينات الفهرسة */
+.z-50 {
+    z-index: 50;
+}
+
+/* تحسينات المؤشر */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* تحسينات الكائن */
+.object-contain {
+    object-fit: contain;
 }
