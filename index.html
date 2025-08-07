@@ -112,6 +112,22 @@
                 page-break-after: always;
             }
         }
+
+        /* Loading Overlay Style */
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -276,6 +292,15 @@
     <!-- منطقة الطباعة المخفية -->
     <div id="printArea" class="print-content hidden">
         <!-- سيتم إنشاء محتوى الطباعة هنا -->
+    </div>
+    
+    <!-- شاشة التحميل -->
+    <div id="loading-overlay">
+        <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p class="text-gray-700 font-semibold text-lg">يتم تجهيز ملف الطباعة...</p>
+            <p class="text-sm text-gray-500 mt-2">يرجى الانتظار، قد يستغرق الأمر بضع ثوانٍ</p>
+        </div>
     </div>
 
     <script>
@@ -604,7 +629,7 @@
                 div.className = `day-checkbox flex items-center p-2 border border-gray-300 rounded-lg cursor-pointer ${isExcluded ? 'border-red-300 bg-red-50' : ''}`;
                 div.onclick = () => toggleDay(index, div);
                 div.innerHTML = `
-                    <input type="checkbox" id="day${index}" ${isExcluded ? '' : 'checked'} class="mr-2">
+                    <input type="checkbox" id="day${index}" ${!isExcluded ? 'checked' : ''} class="mr-2">
                     <label for="day${index}" class="text-sm cursor-pointer">${day}</label>
                 `;
                 container.appendChild(div);
@@ -614,23 +639,25 @@
         // تبديل اليوم (تم تحديث هذه الدالة لمنع التكرار)
         function toggleDay(dayIndex, element) {
             const checkbox = element.querySelector('input');
-            checkbox.checked = !checkbox.checked;
+            const isChecked = checkbox.checked; // حالة التحقق الحالية
             
+            // تحديث حالة القائمة
             const indexInArray = excludedDays.indexOf(dayIndex);
-
-            if (checkbox.checked) {
-                // إذا كان موجودًا في القائمة المستبعدة، قم بإزالته
+            
+            if (isChecked) { // إذا كان محددًا، فهذا يعني أننا نزيله من قائمة المستبعدة
                 if (indexInArray !== -1) {
                     excludedDays.splice(indexInArray, 1);
                 }
                 element.classList.remove('border-red-300', 'bg-red-50');
-            } else {
-                // إذا لم يكن موجودًا في القائمة، قم بإضافته
+            } else { // إذا لم يكن محددًا، فهذا يعني أننا نضيفه إلى قائمة المستبعدة
                 if (indexInArray === -1) {
                     excludedDays.push(dayIndex);
                 }
                 element.classList.add('border-red-300', 'bg-red-50');
             }
+            
+            // تبديل حالة checkbox بعد تحديث القائمة
+            checkbox.checked = !isChecked;
             
             calculateEndDate();
         }
@@ -685,7 +712,7 @@
                     <div><strong>تاريخ البدء:</strong> ${startDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
                     <div><strong>تاريخ الانتهاء:</strong> ${endDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', calendar: 'gregory' })}</div>
                     <div><strong>عدد أيام التوصيل:</strong> ${getDuration(selectedPeriod)} يوم</div>
-                    ${excludedDays.length > 0 ? `<div><strong>الأيام المستبعدة:</strong> ${excludedDays.map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
+                    ${excludedDays.length > 0 ? `<div><strong>الأيام المستبعدة:</strong> ${[...new Set(excludedDays)].map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
                 </div>
             `;
         }
@@ -953,17 +980,46 @@ ${customerLink}`;
                 }
             }
         }
+        
+        // دالة جديدة لتحميل الصورة كـ Promise
+        function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error(`Failed to load image at ${url}`));
+                img.src = url;
+            });
+        }
 
-        // طباعة الاشتراك
+        // طباعة الاشتراك (تم التعديل لضمان تحميل الصور)
         async function printSubscription(id) {
             try {
+                // إظهار شاشة التحميل
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
                 const doc = await db.collection('subscriptions').doc(id).get();
                 if (!doc.exists) {
                     alert('الاشتراك غير موجود');
+                    // إخفاء شاشة التحميل في حالة الخطأ
+                    document.getElementById('loading-overlay').style.display = 'none';
                     return;
                 }
                 
                 const data = doc.data();
+
+                // تحميل الصور أولاً
+                const imagePromises = [];
+                if (data.signatureURL) {
+                    imagePromises.push(loadImage(data.signatureURL));
+                }
+                if (data.subscription.image) {
+                    // مسار الصورة في حالة كانت صورة مخصصة أو من assets
+                    const imageUrl = data.subscription.image.startsWith('./') ? new URL(data.subscription.image, window.location.href).href : data.subscription.image;
+                    imagePromises.push(loadImage(imageUrl));
+                }
+
+                // انتظار تحميل جميع الصور
+                await Promise.all(imagePromises);
                 
                 // تحديد عدد المرات التي سيتكرر فيها المحتوى بناءً على مدة الاشتراك
                 let repeatCount = 1;
@@ -989,6 +1045,9 @@ ${customerLink}`;
                 document.getElementById('mainPage').classList.add('hidden');
                 document.getElementById('printArea').classList.remove('hidden');
 
+                // إخفاء شاشة التحميل قبل الطباعة مباشرة
+                document.getElementById('loading-overlay').style.display = 'none';
+
                 setTimeout(() => {
                     window.print();
                     // بعد الطباعة أو الإلغاء، يتم إعادة إظهار المحتوى الرئيسي
@@ -1000,6 +1059,8 @@ ${customerLink}`;
             } catch (error) {
                 console.error('خطأ في طباعة الاشتراك:', error);
                 alert('حدث خطأ في طباعة الاشتراك');
+                // إخفاء شاشة التحميل في حالة الخطأ
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         }
 
