@@ -1,280 +1,228 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+body { 
+    font-family: 'Cairo', sans-serif; 
 }
 
-body {
-    font-family: 'Cairo', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-    color: #333;
-}
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    overflow: hidden;
-}
-
-h1 {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-    text-align: center;
-    padding: 30px;
-    margin: 0;
-    font-size: 2.5rem;
-    font-weight: 700;
-}
-
-.subscription-info {
-    padding: 30px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.subscription-info h2 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    text-align: center;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.info-item {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 10px;
-    border-right: 4px solid #4CAF50;
-}
-
-.info-item strong {
-    color: #2c3e50;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.meal-plan-image-container {
-    padding: 30px;
-    text-align: center;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.meal-plan-image-container h3 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 1.5rem;
-}
-
-.meal-plan-image-container img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.meal-plan-image-container img:hover {
-    transform: scale(1.02);
-}
-
-.terms-and-conditions {
-    padding: 30px;
-    background: #fff3cd;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.terms-and-conditions h2 {
-    color: #856404;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.5rem;
-}
-
-.terms-and-conditions ul {
-    list-style: none;
-    padding: 0;
-}
-
-.terms-and-conditions li {
-    background: white;
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 10px;
-    border-right: 4px solid #ffc107;
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.terms-and-conditions li:before {
-    content: "⚠️";
-    margin-left: 10px;
-}
-
-.signature-section {
-    padding: 30px;
-    text-align: center;
-}
-
-.signature-section p {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 20px;
-}
-
-#signature-pad {
-    border: 3px dashed #ddd;
-    border-radius: 15px;
-    cursor: crosshair;
-    background-color: #fafafa;
-    width: 100%;
-    max-width: 600px;
-    height: 200px;
-    transition: border-color 0.3s ease;
-}
-
-#signature-pad:hover {
-    border-color: #4CAF50;
-}
-
-.signature-buttons {
-    margin-top: 20px;
+/* شاشة التحميل */
+.loading {
     display: flex;
-    gap: 15px;
+    align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
+    min-height: 50vh;
 }
 
-.signature-buttons button {
-    padding: 12px 30px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 120px;
+.spinner {
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
 }
 
-#clear-signature-btn {
-    background: #dc3545;
-    color: white;
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-#clear-signature-btn:hover {
-    background: #c82333;
-    transform: translateY(-2px);
+/* تصميم منطقة التوقيع */
+.signature-pad {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    cursor: crosshair;
+    background: #fafafa;
+    touch-action: none;
 }
 
-#approve-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
+.signature-pad.signed {
+    border-color: #10b981;
+    background: #f0fdf4;
 }
 
-#approve-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-}
-
-#approve-btn:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.success-message {
-    text-align: center;
-    padding: 50px 30px;
-}
-
-.success-icon {
-    font-size: 5rem;
-    margin-bottom: 20px;
-}
-
-.success-message h1 {
-    background: none;
-    color: #4CAF50;
-    padding: 0;
-    margin-bottom: 20px;
-}
-
-.success-message p {
-    font-size: 1.2rem;
-    line-height: 1.6;
-    color: #666;
-    margin-bottom: 30px;
-}
-
-.contact-info {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 15px;
-    margin-top: 30px;
-}
-
-.contact-info p {
-    margin-bottom: 10px;
-    font-size: 1rem;
-}
-
-/* تصميم متجاوب */
+/* تحسينات الاستجابة */
 @media (max-width: 768px) {
-    body {
-        padding: 10px;
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
-    h1 {
+    .text-4xl {
         font-size: 2rem;
-        padding: 20px;
     }
     
-    .info-grid {
+    .grid-cols-2 {
         grid-template-columns: 1fr;
     }
     
-    .signature-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .signature-buttons button {
-        width: 100%;
-        max-width: 300px;
-    }
-    
-    #signature-pad {
+    .signature-pad {
         height: 150px;
     }
 }
 
-@media (max-width: 480px) {
-    .container {
-        border-radius: 10px;
+/* تحسينات التفاعل */
+button:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* تحسينات النوافذ المنبثقة */
+.fixed {
+    backdrop-filter: blur(4px);
+}
+
+/* تحسينات الصور */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* تحسينات النصوص */
+.text-center {
+    text-align: center;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+/* تحسينات الألوان */
+.text-gray-800 {
+    color: #1f2937;
+}
+
+.text-gray-600 {
+    color: #4b5563;
+}
+
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+/* تحسينات الظلال */
+.shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* تحسينات الانتقالات */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.duration-300 {
+    transition-duration: 300ms;
+}
+
+/* تحسينات الحدود */
+.rounded-2xl {
+    border-radius: 1rem;
+}
+
+.rounded-xl {
+    border-radius: 0.75rem;
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+/* تحسينات المسافات */
+.p-8 {
+    padding: 2rem;
+}
+
+.p-6 {
+    padding: 1.5rem;
+}
+
+.p-4 {
+    padding: 1rem;
+}
+
+.mb-8 {
+    margin-bottom: 2rem;
+}
+
+.mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+/* تحسينات الشبكة */
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+    .md\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+/* تحسينات الأزرار */
+.disabled\:opacity-50:disabled {
+    opacity: 0.5;
+}
+
+.disabled\:cursor-not-allowed:disabled {
+    cursor: not-allowed;
+}
+
+/* تحسينات الإدخال */
+input[type="checkbox"] {
+    accent-color: #dc2626;
+}
+
+/* تحسينات خاصة بالتوقيع */
+canvas {
+    display: block;
+    border-radius: 8px;
+}
+
+/* تحسينات الطباعة */
+@media print {
+    body * {
+        visibility: hidden;
     }
     
-    h1 {
-        font-size: 1.5rem;
+    .print-content, .print-content * {
+        visibility: visible;
     }
     
-    .subscription-info,
-    .meal-plan-image-container,
-    .terms-and-conditions,
-    .signature-section {
-        padding: 20px;
+    .print-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    .no-print {
+        display: none !important;
     }
 }
