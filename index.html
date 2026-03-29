@@ -351,6 +351,33 @@
         let editingSubscriptionId = null; // لتخزين معرف الاشتراك عند التعديل
         let customImageFile = null; // لتخزين ملف الصورة المخصصة
 
+        // تحويل أخطاء Firebase إلى رسائل مفهومة داخل الواجهة
+        function getFirebaseErrorMessage(error, operation = 'تنفيذ العملية') {
+            const errorCode = error?.code || '';
+            const errorMessage = error?.message || '';
+
+            if (
+                errorMessage.includes('Cloud Firestore API has not been used') ||
+                errorMessage.includes('firestore.googleapis.com')
+            ) {
+                return 'تعذر الاتصال بقاعدة البيانات لأن Cloud Firestore غير مفعّل في مشروع Firebase الحالي. فعّل Firestore من لوحة Firebase/Google Cloud ثم أعد المحاولة بعد بضع دقائق.';
+            }
+
+            if (errorCode === 'permission-denied') {
+                return 'تم رفض الوصول إلى قاعدة البيانات. تأكد من تفعيل Cloud Firestore ومن قواعد الأمان في مشروع Firebase الحالي.';
+            }
+
+            if (errorCode === 'unavailable') {
+                return 'تعذر الوصول إلى Firebase حاليًا. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.';
+            }
+
+            if (errorCode.startsWith('storage/')) {
+                return `حدثت مشكلة في تخزين الملفات أثناء ${operation}. تأكد من تفعيل Firebase Storage وصلاحياته.`;
+            }
+
+            return `حدث خطأ أثناء ${operation}${errorMessage ? `: ${errorMessage}` : '.'}`;
+        }
+
         // تحويل الأرقام العربية إلى إنجليزية
         function convertArabicToEnglish(input) {
             const arabicNumbers = '٠١٢٣٤٥٦٧٨٩';
@@ -775,7 +802,7 @@
                     customImageUrl = await snapshot.ref.getDownloadURL();
                 } catch (error) {
                     console.error('Error uploading custom image:', error);
-                    alert('حدث خطأ في رفع الصورة المخصصة. يرجى المحاولة مرة أخرى.');
+                    alert(getFirebaseErrorMessage(error, 'رفع الصورة المخصصة'));
                     return;
                 }
             } else if (isEditing && selectedSubscription.isCustom && selectedSubscription.image) {
@@ -839,7 +866,7 @@ ${customerLink}`;
                 
             } catch (error) {
                 console.error('خطأ في حفظ البيانات:', error);
-                alert('حدث خطأ في إنشاء الاستمارة. يرجى المحاولة مرة أخرى.');
+                alert(getFirebaseErrorMessage(error, isEditing ? 'تحديث الاستمارة' : 'إنشاء الاستمارة'));
             }
         });
 
@@ -914,6 +941,11 @@ ${customerLink}`;
                 
             } catch (error) {
                 console.error('خطأ في تحميل الاستمارات:', error);
+                document.getElementById('subscriptionsList').innerHTML = `
+                    <div class="col-span-full bg-red-50 border border-red-200 text-red-800 rounded-xl p-6 text-center">
+                        ${getFirebaseErrorMessage(error, 'تحميل الاستمارات')}
+                    </div>
+                `;
             }
         }
 
@@ -963,7 +995,7 @@ ${customerLink}`;
 
             } catch (error) {
                 console.error('خطأ في تعديل الاشتراك:', error);
-                alert('حدث خطأ أثناء محاولة تعديل الاشتراك.');
+                alert(getFirebaseErrorMessage(error, 'تحميل بيانات الاستمارة للتعديل'));
             }
         }
 
@@ -976,7 +1008,7 @@ ${customerLink}`;
                     alert('تم حذف الاشتراك بنجاح');
                 } catch (error) {
                     console.error('خطأ في حذف الاشتراك:', error);
-                    alert('حدث خطأ في حذف الاشتراك');
+                    alert(getFirebaseErrorMessage(error, 'حذف الاستمارة'));
                 }
             }
         }
