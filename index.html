@@ -842,7 +842,7 @@
                 }
                 
                 // إنشاء رابط العميل - رابط كامل للواتساب
-                const customerLink = `https://figsandolives.github.io/ishtrak/sign.html?customer=${formData.id || subscriptionId}`;
+                const customerLink = new URL(`sign.html?customer=${encodeURIComponent(formData.id || subscriptionId)}`, window.location.href).href;
                 
                 // إنشاء رسالة الواتساب
                 const whatsappMessage = `تم تعبئة بيانات استمارة الاشتراك بنجاح،
@@ -951,7 +951,7 @@ ${customerLink}`;
 
         // إرسال للعميل
         function sendToCustomer(id, phoneNumber) {
-            const customerLink = `https://figsandolives.github.io/ishtrak/sign.html?customer=${id}`;
+            const customerLink = new URL(`sign.html?customer=${encodeURIComponent(id)}`, window.location.href).href;
             const whatsappMessage = `تم تعبئة بيانات استمارة الاشتراك بنجاح،
 يرجى الضغط على الرابط التالي للاعتماد والتوقيع:
 ${customerLink}`;

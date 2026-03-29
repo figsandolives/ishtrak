@@ -1,491 +1,486 @@
-
-// إعداد Firebase
 const firebaseConfig = {
-    apiKey: "AIzaSyBIP8ezD990c7kZ3z-gsma2KJpp7Zqu7eA",
-    authDomain: "ishtrakta.firebaseapp.com",
-    databaseURL: "https://ishtrakta-default-rtdb.firebaseio.com",
-    projectId: "ishtrakta",
-    storageBucket: "ishtrakta.firebasestorage.app",
-    messagingSenderId: "854766859254",
-    appId: "1:854766859254:web:0375c2c8c9c518b2f74dd7",
-    measurementId: "G-QT71DGNRXT"
+    apiKey: "AIzaSyDKSgnkag4jXFqsuaMnwAB_fPrKXaTSqFI",
+    authDomain: "ishrtakat.firebaseapp.com",
+    databaseURL: "https://ishrtakat-default-rtdb.firebaseio.com",
+    projectId: "ishrtakat",
+    storageBucket: "ishrtakat.firebasestorage.app",
+    messagingSenderId: "736083445316",
+    appId: "1:736083445316:web:db45ddda266bd297745e11",
+    measurementId: "G-FVCQGP662P"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const storage = firebase.storage();
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-// متغيرات التوقيع
-let canvas, ctx;
+const db = firebase.firestore();
+const EXCLUDED_DAY_NAMES = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+const PERIOD_NAMES = {
+    week: 'أسبوع',
+    twoWeeks: 'أسبوعين',
+    fourWeeks: '٤ أسابيع',
+    month: 'شهر',
+    tenDays: '١٠ أيام',
+    twentyDays: '٢٠ يوم',
+    thirtyDays: '٣٠ يوم',
+    custom: 'مخصص'
+};
+
+let currentCustomerId = null;
+let currentSubscription = null;
+let signaturePad = null;
+let signatureCtx = null;
 let isDrawing = false;
 let hasSignature = false;
-let subscriptionData = null;
-let customerId = null;
-let lastX = 0;
-let lastY = 0;
+let signatureDataUrl = null;
 
-// الحصول على معرف العميل من الرابط
-function getCustomerIdFromURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('customer');
-}
+function getFirebaseErrorMessage(error, operation = 'تنفيذ العملية') {
+    const errorCode = error?.code || '';
+    const errorMessage = error?.message || '';
 
-// تهيئة لوحة التوقيع
-function initSignaturePad() {
-    canvas = document.getElementById('signaturePad');
-    if (!canvas) {
-        console.error('Canvas element not found');
-        return;
-    }
-    
-    ctx = canvas.getContext('2d');
-    
-    // تعيين حجم الكانفاس بناءً على حجم العنصر
-    resizeCanvas();
-    
-    // إعدادات الرسم
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // أحداث الماوس
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-
-    // أحداث اللمس للهواتف
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    
-    console.log('Signature pad initialized successfully');
-}
-
-// تغيير حجم الكانفاس
-function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    
-    ctx.scale(dpr, dpr);
-    
-    // إعادة تطبيق إعدادات الرسم
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-}
-
-// الحصول على إحداثيات الماوس
-function getMousePos(e) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-    };
-}
-
-// الحصول على إحداثيات اللمس
-function getTouchPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top
-    };
-}
-
-// بدء الرسم
-function startDrawing(e) {
-    isDrawing = true;
-    const pos = getMousePos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-    
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    
-    console.log('Started drawing at:', lastX, lastY);
-}
-
-// الرسم
-function draw(e) {
-    if (!isDrawing) return;
-    
-    const pos = getMousePos(e);
-    
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
-    
-    if (!hasSignature) {
-        hasSignature = true;
-        canvas.classList.add('signed');
-        updateSaveButton();
-        updateSignatureStatus('تم التوقيع ✓');
-    }
-}
-
-// إيقاف الرسم
-function stopDrawing() {
-    if (isDrawing) {
-        isDrawing = false;
-        console.log('Stopped drawing');
-    }
-}
-
-// التعامل مع بداية اللمس
-function handleTouchStart(e) {
-    e.preventDefault();
-    isDrawing = true;
-    const pos = getTouchPos(e);
-    lastX = pos.x;
-    lastY = pos.y;
-    
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    
-    console.log('Touch started at:', lastX, lastY);
-}
-
-// التعامل مع حركة اللمس
-function handleTouchMove(e) {
-    e.preventDefault();
-    if (!isDrawing) return;
-    
-    const pos = getTouchPos(e);
-    
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    
-    lastX = pos.x;
-    lastY = pos.y;
-    
-    if (!hasSignature) {
-        hasSignature = true;
-        canvas.classList.add('signed');
-        updateSaveButton();
-        updateSignatureStatus('تم التوقيع ✓');
-    }
-}
-
-// التعامل مع انتهاء اللمس
-function handleTouchEnd(e) {
-    e.preventDefault();
-    if (isDrawing) {
-        isDrawing = false;
-        console.log('Touch ended');
-    }
-}
-
-// مسح التوقيع
-function clearSignature() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasSignature = false;
-    canvas.classList.remove('signed');
-    updateSaveButton();
-    updateSignatureStatus('يرجى التوقيع والموافقة على الشروط لتفعيل زر الاعتماد');
-    console.log('Signature cleared');
-}
-
-// تحديث حالة التوقيع
-function updateSignatureStatus(message) {
-    const statusElement = document.getElementById('signatureStatus');
-    if (statusElement) {
-        statusElement.textContent = message;
-    }
-}
-
-// تحديث زر الحفظ
-function updateSaveButton() {
-    const saveBtn = document.getElementById('saveBtn');
-    const agreeTerms = document.getElementById('agreeTerms');
-    
-    if (!saveBtn || !agreeTerms) return;
-    
-    const canSave = hasSignature && agreeTerms.checked;
-    saveBtn.disabled = !canSave;
-    
-    if (canSave) {
-        updateSignatureStatus('جاهز للاعتماد ✅');
-    } else if (hasSignature && !agreeTerms.checked) {
-        updateSignatureStatus('يرجى الموافقة على الشروط والأحكام');
-    } else if (!hasSignature && agreeTerms.checked) {
-        updateSignatureStatus('يرجى التوقيع أولاً');
-    }
-}
-
-// حفظ التوقيع
-async function saveSignature() {
-    if (!hasSignature) {
-        alert('يرجى التوقيع أولاً');
-        return;
+    if (errorCode === 'permission-denied' && errorMessage.includes('suspended')) {
+        return 'تعذر الوصول إلى مشروع Firebase لأن المشروع المرتبط بصفحة التوقيع موقوف. تأكد من نشر آخر نسخة من app.js وsign.html المرتبطتين بالمشروع الجديد.';
     }
 
-    if (!document.getElementById('agreeTerms').checked) {
-        alert('يرجى الموافقة على الشروط والأحكام');
-        return;
+    if (
+        errorMessage.includes('Cloud Firestore API has not been used') ||
+        errorMessage.includes('firestore.googleapis.com')
+    ) {
+        return 'تعذر تحميل الاستمارة لأن Cloud Firestore غير مفعّل في مشروع Firebase الحالي. فعّل Firestore ثم أعد المحاولة.';
     }
 
-    const saveBtn = document.getElementById('saveBtn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = '⏳ جاري الحفظ...';
-
-    try {
-        // تحويل التوقيع إلى صورة
-        const signatureDataURL = canvas.toDataURL('image/png');
-        
-        // رفع التوقيع إلى Firebase Storage
-        const signatureBlob = dataURLtoBlob(signatureDataURL);
-        const storageRef = storage.ref().child('signatures/' + customerId + '_signature.png');
-        const snapshot = await storageRef.put(signatureBlob);
-        const signatureURL = await snapshot.ref.getDownloadURL();
-
-        // تحديث بيانات الاشتراك
-        await db.collection('subscriptions').doc(customerId).update({
-            status: 'approved',
-            signatureURL: signatureURL,
-            approvedAt: new Date()
-        });
-
-        // إظهار رسالة النجاح
-        document.getElementById('successModal').classList.remove('hidden');
-
-    } catch (error) {
-        console.error('خطأ في حفظ التوقيع:', error);
-        alert('حدث خطأ في حفظ التوقيع. يرجى المحاولة مرة أخرى.');
-        
-        // إعادة تفعيل الزر
-        saveBtn.disabled = false;
-        saveBtn.textContent = '✅ اعتماد الاشتراك';
+    if (errorCode === 'permission-denied') {
+        return 'تم رفض الوصول إلى بيانات الاستمارة. تأكد من قواعد Firestore وصلاحيات القراءة والكتابة.';
     }
+
+    if (errorCode === 'unavailable' || errorMessage.includes('offline')) {
+        return 'تعذر الاتصال بقاعدة البيانات حاليًا. تحقق من الإنترنت ثم أعد المحاولة.';
+    }
+
+    return `حدث خطأ أثناء ${operation}${errorMessage ? `: ${errorMessage}` : '.'}`;
 }
 
-// تحويل Data URL إلى Blob
-function dataURLtoBlob(dataURL) {
-    const arr = dataURL.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-        u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new Blob([u8arr], { type: mime });
+function showScreen(screen) {
+    document.getElementById('loadingScreen').classList.toggle('hidden', screen !== 'loading');
+    document.getElementById('errorScreen').classList.toggle('hidden', screen !== 'error');
+    document.getElementById('mainContent').classList.toggle('hidden', screen !== 'main');
 }
 
-// تحميل بيانات الاشتراك
-async function loadSubscriptionData() {
-    try {
-        console.log('Loading subscription data for customer:', customerId);
-        
-        const doc = await db.collection('subscriptions').doc(customerId).get();
-        
-        if (!doc.exists) {
-            showError('الاشتراك غير موجود', 'لم يتم العثور على بيانات الاشتراك المطلوب');
-            return;
-        }
-
-        subscriptionData = doc.data();
-        console.log('Subscription data loaded:', subscriptionData);
-        
-        displaySubscriptionData();
-        
-        // إخفاء شاشة التحميل وإظهار المحتوى
-        document.getElementById('loadingScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
-
-    } catch (error) {
-        console.error('خطأ في تحميل البيانات:', error);
-        showError('خطأ في الاتصال', 'حدث خطأ في تحميل بيانات الاشتراك من الخادم');
-    }
-}
-
-// عرض رسالة خطأ
-function showError(title, message) {
-    document.getElementById('loadingScreen').classList.add('hidden');
-    document.getElementById('errorScreen').classList.remove('hidden');
+function showError(message) {
     document.getElementById('errorMessage').textContent = message;
+    showScreen('error');
 }
 
-// عرض بيانات الاشتراك
-function displaySubscriptionData() {
-    try {
-        // بيانات العميل
-        document.getElementById('customerName').textContent = subscriptionData.customerName || 'غير محدد';
-        document.getElementById('phoneNumber').textContent = subscriptionData.phoneNumber || 'غير محدد';
-
-        // العنوان
-        displayAddressData();
-
-        // تفاصيل الاشتراك
-        displaySubscriptionDetails();
-
-        // الأيام المستبعدة
-        displayExcludedDays();
-
-        // صورة الاشتراك
-        displaySubscriptionImage();
-        
-        console.log('All subscription data displayed successfully');
-        
-    } catch (error) {
-        console.error('خطأ في عرض البيانات:', error);
-        showError('خطأ في عرض البيانات', 'حدث خطأ في عرض بيانات الاشتراك');
+function formatDate(dateValue) {
+    if (!dateValue) {
+        return 'غير محدد';
     }
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return dateValue;
+    }
+
+    return date.toLocaleDateString('ar-EG', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        calendar: 'gregory'
+    });
 }
 
-// عرض بيانات العنوان
-function displayAddressData() {
-    const addressDiv = document.getElementById('addressDetails');
-    const address = subscriptionData.address || {};
-    
-    let addressHTML = `
-        <div><strong>النوع:</strong> ${subscriptionData.addressType === 'house' ? 'بيت' : 'شقة'}</div>
+function formatDeliveryTimeRange(timeRange) {
+    if (!timeRange || !timeRange.includes('-')) {
+        return timeRange || 'غير محدد';
+    }
+
+    const [start, end] = timeRange.split('-');
+    let startHour = parseInt(start, 10);
+    let endHour = parseInt(end, 10);
+
+    if (Number.isNaN(startHour) || Number.isNaN(endHour)) {
+        return timeRange;
+    }
+
+    let startPeriod = startHour < 12 ? 'صباحاً' : 'ظهراً';
+    let endPeriod = endHour < 12 ? 'صباحاً' : (endHour === 12 ? 'ظهراً' : 'مساءً');
+
+    let start12 = startHour > 12 ? startHour - 12 : startHour;
+    let end12 = endHour > 12 ? endHour - 12 : endHour;
+
+    if (start12 === 0) start12 = 12;
+    if (end12 === 0) end12 = 12;
+    if (startHour === 12) startPeriod = 'ظهراً';
+    if (endHour === 12) endPeriod = 'ظهراً';
+
+    const toArabicNumerals = (num) => num.toString().replace(/\d/g, (digit) => '٠١٢٣٤٥٦٧٨٩'[digit]);
+    return `من ${toArabicNumerals(start12)} ${startPeriod} إلى ${toArabicNumerals(end12)} ${endPeriod}`;
+}
+
+function getPeriodText(period) {
+    return PERIOD_NAMES[period] || period || 'غير محدد';
+}
+
+function getExcludedDaysText(days) {
+    if (!Array.isArray(days) || days.length === 0) {
+        return '';
+    }
+
+    return [...new Set(days)]
+        .map((dayIndex) => EXCLUDED_DAY_NAMES[dayIndex] || dayIndex)
+        .join('، ');
+}
+
+function renderAddressDetails(data) {
+    if (!data?.address) {
+        document.getElementById('addressDetails').innerHTML = '<div>لا توجد بيانات عنوان</div>';
+        return;
+    }
+
+    const address = data.address;
+    let html = `
+        <div><strong>نوع العنوان:</strong> ${data.addressType === 'house' ? 'بيت' : 'شقة'}</div>
         <div><strong>المنطقة:</strong> ${address.area || 'غير محدد'}</div>
         <div><strong>القطعة:</strong> ${address.block || 'غير محدد'}</div>
         <div><strong>الشارع:</strong> ${address.street || 'غير محدد'}</div>
     `;
-    
+
     if (address.avenue) {
-        addressHTML += `<div><strong>الجادة:</strong> ${address.avenue}</div>`;
+        html += `<div><strong>الجادة:</strong> ${address.avenue}</div>`;
     }
-    
-    if (subscriptionData.addressType === 'house') {
-        addressHTML += `<div><strong>رقم المنزل:</strong> ${address.houseNumber || 'غير محدد'}</div>`;
+
+    if (data.addressType === 'house') {
+        html += `<div><strong>رقم المنزل:</strong> ${address.houseNumber || 'غير محدد'}</div>`;
     } else {
-        addressHTML += `
+        html += `
             <div><strong>البناية:</strong> ${address.buildingName || 'غير محدد'}</div>
             <div><strong>الطابق:</strong> ${address.floor || 'غير محدد'}</div>
             <div><strong>الشقة:</strong> ${address.apartment || 'غير محدد'}</div>
         `;
     }
-    
+
     if (address.nearbyBuilding) {
-        addressHTML += `<div><strong>مبنى مجاور:</strong> ${address.nearbyBuilding}</div>`;
+        html += `<div class="md:col-span-2"><strong>مبنى مجاور:</strong> ${address.nearbyBuilding}</div>`;
     }
-    
-    addressDiv.innerHTML = addressHTML;
+
+    document.getElementById('addressDetails').innerHTML = html;
 }
 
-// عرض تفاصيل الاشتراك
-function displaySubscriptionDetails() {
-    const subscription = subscriptionData.subscription || {};
-    
-    document.getElementById('subscriptionName').textContent = subscription.name || 'غير محدد';
-    document.getElementById('subscriptionPeriod').textContent = getPeriodText(subscriptionData.period);
-    
-    // تنسيق التاريخ
-    if (subscriptionData.startDate) {
-        const startDate = new Date(subscriptionData.startDate);
-        document.getElementById('startDate').textContent = startDate.toLocaleDateString('ar-EG', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric', 
-            calendar: 'gregory' 
-        });
-    }
-    
-    document.getElementById('deliveryTime').textContent = subscriptionData.deliveryTime || 'غير محدد';
-    document.getElementById('subscriptionPrice').textContent = subscriptionData.price || '0';
-    document.getElementById('deliveryPrice').textContent = subscriptionData.deliveryPrice || '0';
-    document.getElementById('totalPrice').textContent = subscriptionData.totalPrice || '0';
-}
+function renderSubscriptionData(docId, data) {
+    currentSubscription = { id: docId, ...data };
 
-// عرض الأيام المستبعدة
-function displayExcludedDays() {
-    if (subscriptionData.excludedDays && subscriptionData.excludedDays.length > 0) {
-        const weekDays = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-        const excludedDaysText = subscriptionData.excludedDays.map(day => weekDays[day] || `يوم ${day}`).join(', ');
+    document.getElementById('customerName').textContent = data.customerName || 'غير محدد';
+    document.getElementById('phoneNumber').textContent = data.phoneNumber || 'غير محدد';
+    document.getElementById('subscriptionName').textContent = data.subscription?.name || 'غير محدد';
+    document.getElementById('subscriptionPeriod').textContent = getPeriodText(data.period);
+    document.getElementById('startDate').textContent = formatDate(data.startDate);
+    document.getElementById('deliveryTime').textContent = formatDeliveryTimeRange(data.deliveryTime);
+    document.getElementById('subscriptionPrice').textContent = data.price ?? 0;
+    document.getElementById('deliveryPrice').textContent = data.deliveryPrice ?? 0;
+    document.getElementById('totalPrice').textContent = data.totalPrice ?? 0;
+
+    renderAddressDetails(data);
+
+    const excludedDaysText = getExcludedDaysText(data.excludedDays);
+    if (excludedDaysText) {
         document.getElementById('excludedDays').textContent = excludedDaysText;
         document.getElementById('excludedDaysDiv').classList.remove('hidden');
+    } else {
+        document.getElementById('excludedDaysDiv').classList.add('hidden');
     }
+
+    const subscriptionImageDiv = document.getElementById('subscriptionImageDiv');
+    const subscriptionImage = document.getElementById('subscriptionImage');
+    if (data.subscription?.image) {
+        subscriptionImage.src = data.subscription.image;
+        subscriptionImageDiv.classList.remove('hidden');
+        subscriptionImage.onerror = () => {
+            subscriptionImageDiv.classList.add('hidden');
+        };
+    } else {
+        subscriptionImageDiv.classList.add('hidden');
+    }
+
+    if (data.signatureURL) {
+        signatureDataUrl = data.signatureURL;
+        hasSignature = true;
+        drawSignatureImage(signatureDataUrl);
+    }
+
+    if (data.status === 'approved') {
+        document.getElementById('agreeTerms').checked = true;
+        document.getElementById('agreeTerms').disabled = true;
+        document.getElementById('saveBtn').textContent = 'تم الاعتماد';
+        document.getElementById('signatureStatus').textContent = 'تم اعتماد هذه الاستمارة مسبقًا.';
+    } else {
+        document.getElementById('signatureStatus').textContent = 'يرجى التوقيع والموافقة على الشروط لتفعيل زر الاعتماد';
+    }
+
+    updateSaveButtonState();
 }
 
-// عرض صورة الاشتراك
-function displaySubscriptionImage() {
-    if (subscriptionData.subscription && subscriptionData.subscription.image) {
-        document.getElementById('subscriptionImage').src = subscriptionData.subscription.image;
-        document.getElementById('subscriptionImageDiv').classList.remove('hidden');
+function updateSaveButtonState() {
+    const agreeTerms = document.getElementById('agreeTerms');
+    const saveBtn = document.getElementById('saveBtn');
+    const signatureStatus = document.getElementById('signatureStatus');
+    const alreadyApproved = currentSubscription?.status === 'approved';
+
+    const canSave = Boolean(currentSubscription) && !alreadyApproved && agreeTerms.checked && hasSignature;
+    saveBtn.disabled = !canSave;
+
+    if (alreadyApproved) {
+        signatureStatus.textContent = 'تم اعتماد هذه الاستمارة مسبقًا.';
+        return;
     }
+
+    if (!agreeTerms.checked && !hasSignature) {
+        signatureStatus.textContent = 'يرجى التوقيع والموافقة على الشروط لتفعيل زر الاعتماد';
+        return;
+    }
+
+    if (!agreeTerms.checked) {
+        signatureStatus.textContent = 'يرجى الموافقة على الشروط والأحكام أولاً';
+        return;
+    }
+
+    if (!hasSignature) {
+        signatureStatus.textContent = 'يرجى التوقيع داخل المربع أولاً';
+        return;
+    }
+
+    signatureStatus.textContent = 'البيانات مكتملة ويمكن اعتماد الاشتراك الآن';
 }
 
-// الحصول على نص الفترة
-function getPeriodText(period) {
-    const periods = {
-        'week': 'أسبوع',
-        'twoWeeks': 'أسبوعين',
-        'fourWeeks': '٤ أسابيع',
-        'month': 'شهر',
-        'tenDays': '١٠ أيام',
-        'twentyDays': '٢٠ يوم',
-        'thirtyDays': '٣٠ يوم',
-        'custom': 'مخصص'
+function clearCanvasSurface() {
+    if (!signatureCtx || !signaturePad) {
+        return;
+    }
+
+    signatureCtx.clearRect(0, 0, signaturePad.width, signaturePad.height);
+}
+
+function drawSignatureImage(dataUrl) {
+    if (!dataUrl || !signaturePad) {
+        return;
+    }
+
+    const image = new Image();
+    image.onload = () => {
+        clearCanvasSurface();
+        const canvasWidth = signaturePad.width;
+        const canvasHeight = signaturePad.height;
+        const ratio = Math.min(canvasWidth / image.width, canvasHeight / image.height);
+        const drawWidth = image.width * ratio;
+        const drawHeight = image.height * ratio;
+        const offsetX = (canvasWidth - drawWidth) / 2;
+        const offsetY = (canvasHeight - drawHeight) / 2;
+
+        signatureCtx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+        signaturePad.classList.add('signed');
     };
-    return periods[period] || period || 'غير محدد';
+    image.src = dataUrl;
 }
 
-// فتح نافذة الصورة
-function openImageModal() {
-    if (subscriptionData && subscriptionData.subscription && subscriptionData.subscription.image) {
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = subscriptionData.subscription.image;
-        document.getElementById('imageModal').classList.remove('hidden');
+function resizeSignaturePad() {
+    if (!signaturePad) {
+        return;
+    }
+
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const rect = signaturePad.getBoundingClientRect();
+    const width = Math.max(Math.floor(rect.width * ratio), 1);
+    const height = Math.max(Math.floor(rect.height * ratio), 1);
+
+    signaturePad.width = width;
+    signaturePad.height = height;
+    signatureCtx = signaturePad.getContext('2d');
+    signatureCtx.lineCap = 'round';
+    signatureCtx.lineJoin = 'round';
+    signatureCtx.lineWidth = 2.5 * ratio;
+    signatureCtx.strokeStyle = '#111827';
+
+    if (signatureDataUrl) {
+        drawSignatureImage(signatureDataUrl);
+    } else {
+        clearCanvasSurface();
     }
 }
 
-// إغلاق نافذة الصورة
+function getCanvasPosition(event) {
+    const rect = signaturePad.getBoundingClientRect();
+    const scaleX = signaturePad.width / rect.width;
+    const scaleY = signaturePad.height / rect.height;
+
+    return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+    };
+}
+
+function startDrawing(event) {
+    if (currentSubscription?.status === 'approved') {
+        return;
+    }
+
+    isDrawing = true;
+    const position = getCanvasPosition(event);
+    signatureCtx.beginPath();
+    signatureCtx.moveTo(position.x, position.y);
+    event.preventDefault();
+}
+
+function draw(event) {
+    if (!isDrawing || currentSubscription?.status === 'approved') {
+        return;
+    }
+
+    const position = getCanvasPosition(event);
+    signatureCtx.lineTo(position.x, position.y);
+    signatureCtx.stroke();
+    hasSignature = true;
+    signaturePad.classList.add('signed');
+    event.preventDefault();
+}
+
+function stopDrawing() {
+    if (!isDrawing) {
+        return;
+    }
+
+    isDrawing = false;
+    signatureCtx.closePath();
+    signatureDataUrl = signaturePad.toDataURL('image/png');
+    updateSaveButtonState();
+}
+
+function initializeSignaturePad() {
+    signaturePad = document.getElementById('signaturePad');
+    resizeSignaturePad();
+
+    signaturePad.addEventListener('pointerdown', startDrawing);
+    signaturePad.addEventListener('pointermove', draw);
+    signaturePad.addEventListener('pointerup', stopDrawing);
+    signaturePad.addEventListener('pointerleave', stopDrawing);
+    signaturePad.addEventListener('pointercancel', stopDrawing);
+
+    window.addEventListener('resize', resizeSignaturePad);
+    console.log('Signature pad initialized successfully');
+}
+
+function openImageModal() {
+    const modal = document.getElementById('imageModal');
+    document.getElementById('modalImage').src = document.getElementById('subscriptionImage').src;
+    modal.classList.remove('hidden');
+}
+
 function closeImageModal() {
     document.getElementById('imageModal').classList.add('hidden');
 }
 
-// إغلاق نافذة النجاح
 function closeSuccessModal() {
     document.getElementById('successModal').classList.add('hidden');
 }
 
-// تهيئة الصفحة
-window.addEventListener('load', function() {
-    console.log('Page loaded, initializing...');
-    
-    customerId = getCustomerIdFromURL();
-    console.log('Customer ID:', customerId);
-    
-    if (!customerId) {
-        showError('رابط غير صحيح', 'لم يتم تمرير معرف العميل في الرابط');
+function clearSignature() {
+    if (currentSubscription?.status === 'approved') {
         return;
     }
 
-    // تهيئة لوحة التوقيع
-    setTimeout(() => {
-        initSignaturePad();
-    }, 100);
-    
-    // تحميل بيانات الاشتراك
-    loadSubscriptionData();
-    
-    // مراقبة تغيير checkbox الشروط والأحكام
-    const agreeTerms = document.getElementById('agreeTerms');
-    if (agreeTerms) {
-        agreeTerms.addEventListener('change', updateSaveButton);
+    signatureDataUrl = null;
+    hasSignature = false;
+    clearCanvasSurface();
+    signaturePad.classList.remove('signed');
+    updateSaveButtonState();
+}
+
+async function loadSubscriptionData(customerId) {
+    console.log('Loading subscription data for customer:', customerId);
+
+    try {
+        const doc = await db.collection('subscriptions').doc(customerId).get();
+
+        if (!doc.exists) {
+            showError('لم يتم العثور على الاستمارة المطلوبة. تأكد من أن الرابط صحيح.');
+            return;
+        }
+
+        renderSubscriptionData(doc.id, doc.data());
+        showScreen('main');
+    } catch (error) {
+        console.error('خطأ في تحميل البيانات:', error);
+        showError(getFirebaseErrorMessage(error, 'تحميل بيانات الاشتراك'));
     }
+}
+
+async function saveSignature() {
+    if (!currentCustomerId || !currentSubscription) {
+        showError('تعذر تحديد الاستمارة المطلوبة.');
+        return;
+    }
+
+    if (currentSubscription.status === 'approved') {
+        closeSuccessModal();
+        return;
+    }
+
+    if (!document.getElementById('agreeTerms').checked) {
+        alert('يرجى الموافقة على الشروط والأحكام أولاً.');
+        return;
+    }
+
+    if (!hasSignature || !signatureDataUrl) {
+        alert('يرجى التوقيع قبل اعتماد الاشتراك.');
+        return;
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'جاري الحفظ...';
+
+    try {
+        await db.collection('subscriptions').doc(currentCustomerId).update({
+            status: 'approved',
+            signatureURL: signatureDataUrl,
+            agreedToTerms: true,
+            approvedAt: new Date()
+        });
+
+        currentSubscription.status = 'approved';
+        document.getElementById('agreeTerms').disabled = true;
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('signatureStatus').textContent = 'تم اعتماد الاشتراك بنجاح.';
+        saveBtn.textContent = 'تم الاعتماد';
+        updateSaveButtonState();
+    } catch (error) {
+        console.error('خطأ في حفظ التوقيع:', error);
+        alert(getFirebaseErrorMessage(error, 'اعتماد الاشتراك'));
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded, initializing...');
+    initializeSignaturePad();
+
+    document.getElementById('agreeTerms').addEventListener('change', updateSaveButtonState);
+
+    const customerId = new URLSearchParams(window.location.search).get('customer');
+    currentCustomerId = customerId;
+    console.log('Customer ID:', customerId);
+
+    if (!customerId) {
+        showError('الرابط غير مكتمل. لم يتم العثور على معرف العميل.');
+        return;
+    }
+
+    loadSubscriptionData(customerId);
 });
 
-// تحديث حجم الكانفاس عند تغيير حجم النافذة
-window.addEventListener('resize', function() {
-    if (canvas && ctx) {
-        setTimeout(() => {
-            resizeCanvas();
-        }, 100);
-    }
-});
+window.openImageModal = openImageModal;
+window.closeImageModal = closeImageModal;
+window.closeSuccessModal = closeSuccessModal;
+window.clearSignature = clearSignature;
+window.saveSignature = saveSignature;
