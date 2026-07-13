@@ -339,6 +339,7 @@
             { id: 15, name: "اسلوب الحياة الصحية (غير مخصص لخسارة الوزن)", prices: { tenDays: 120, twentyDays: 180, thirtyDays: 230 }, image: "a15.jpg" },
             { id: 16, name: "اشتراك الأخصائية ريم العنزي، محسوب السعرات", prices: { tenDays: 150, twentyDays: 200, thirtyDays: 230 }, image: "a16.jpg" },
             { id: 17, name: "اشتراك ريوق المستشفى", prices: { week: 50, twoWeeks: 80, month: 120 }, image: "a17.jpg" },
+            { id: 19, name: "اشتراك نظام الطيبات للتخلص من الالتهابات", prices: { tenDays: 120, twentyDays: 200, thirtyDays: 290 }, image: "a19.jpg" },
             { id: 18, name: "اشتراك مخصص", prices: { custom: true }, image: null, isCustom: true }
         ];
 
@@ -501,7 +502,8 @@
             subscriptionTypes.forEach(subscription => {
                 const div = document.createElement('div');
                 div.className = `subscription-card border-2 border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${selectedId === subscription.id ? 'border-purple-500 bg-purple-50 shadow-lg' : ''}`;
-                div.onclick = () => selectSubscription(subscription);
+                div.dataset.subscriptionId = String(subscription.id);
+                div.onclick = () => selectSubscription(subscription, div);
                 
                 let pricesHtml = '';
                 // تم تعديل المسار هنا
@@ -534,13 +536,16 @@
         }
 
         // اختيار الاشتراك
-        function selectSubscription(subscription) {
+        function selectSubscription(subscription, selectedCard = null) {
+            if (!subscription) return;
             selectedSubscription = subscription;
             
             document.querySelectorAll('.subscription-card').forEach(card => {
                 card.classList.remove('border-purple-500', 'bg-purple-50', 'shadow-lg');
             });
-            event.currentTarget.classList.add('border-purple-500', 'bg-purple-50', 'shadow-lg');
+            const activeCard = selectedCard || Array.from(document.querySelectorAll('.subscription-card'))
+                .find(card => card.dataset.subscriptionId === String(subscription.id));
+            if (activeCard) activeCard.classList.add('border-purple-500', 'bg-purple-50', 'shadow-lg');
             
             showPeriodOptions(subscription);
         }
@@ -563,7 +568,7 @@
             if (subscription.isCustom) {
                 const periods = ['week', 'twoWeeks', 'fourWeeks', 'tenDays', 'twentyDays', 'thirtyDays'];
                 periodOptionsHtml += periods.map(p => `
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === p ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${p}', 0)">
+                    <div data-period-key="${p}" class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === p ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${p}', 0, this)">
                         <div class="font-semibold">${getPeriodText(p)}</div>
                         <div class="text-sm text-gray-600">سعر مخصص</div>
                     </div>
@@ -586,7 +591,7 @@
                 const prices = subscription.prices;
                 const periodKeys = Object.keys(prices);
                 periodOptionsHtml += periodKeys.map(key => `
-                    <div class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === key ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${key}', ${prices[key]})">
+                    <div data-period-key="${key}" class="price-option border-2 border-gray-300 rounded-lg p-3 cursor-pointer text-center ${selectedPeriodKey === key ? 'border-orange-500 bg-orange-50' : ''}" onclick="selectPeriod('${key}', ${prices[key]}, this)">
                         <div class="font-semibold">${getPeriodText(key)}</div>
                         <div class="text-sm text-gray-600">${prices[key]} د.ك</div>
                     </div>
@@ -598,14 +603,16 @@
         }
 
         // اختيار الفترة
-        function selectPeriod(period, price) {
+        function selectPeriod(period, price, selectedOption = null) {
             selectedPeriod = period;
             selectedPrice = price;
             
             document.querySelectorAll('.price-option').forEach(option => {
                 option.classList.remove('border-orange-500', 'bg-orange-50');
             });
-            event.currentTarget.classList.add('border-orange-500', 'bg-orange-50');
+            const activeOption = selectedOption || Array.from(document.querySelectorAll('.price-option'))
+                .find(option => option.dataset.periodKey === String(period));
+            if (activeOption) activeOption.classList.add('border-orange-500', 'bg-orange-50');
             
             updateTotalPrice();
         }
