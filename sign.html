@@ -69,7 +69,9 @@
                         <div><strong>المدة:</strong> <span id="subscriptionPeriod">جاري التحميل...</span></div>
                         <div><strong>تاريخ البدء:</strong> <span id="startDate">جاري التحميل...</span></div>
                         <div><strong>وقت التوصيل:</strong> <span id="deliveryTime">جاري التحميل...</span></div>
-                        <div><strong>سعر الاشتراك:</strong> <span id="subscriptionPrice">0</span> د.ك</div>
+                        <div id="originalPriceDiv" class="hidden"><strong>سعر الاشتراك قبل الخصم:</strong> <span id="originalPrice">0</span> د.ك</div>
+                        <div id="discountDiv" class="hidden"><strong>الخصم:</strong> <span id="discountPercentage">0</span>% — <span id="discountAmount">0</span> د.ك</div>
+                        <div><strong>سعر الاشتراك<span id="afterDiscountLabel"></span>:</strong> <span id="subscriptionPrice">0</span> د.ك</div>
                         <div><strong>سعر التوصيل:</strong> <span id="deliveryPrice">0</span> د.ك</div>
                         <div class="md:col-span-2"><strong>الإجمالي:</strong> <span id="totalPrice" class="text-xl font-bold text-green-600">0</span> د.ك</div>
                         <div id="excludedDaysDiv" class="md:col-span-2 hidden"><strong>الأيام المستبعدة:</strong> <span id="excludedDays"></span></div>

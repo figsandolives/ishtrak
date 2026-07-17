@@ -176,7 +176,18 @@ function renderSubscriptionData(docId, data) {
     document.getElementById('subscriptionPeriod').textContent = getPeriodText(data.period);
     document.getElementById('startDate').textContent = formatDate(data.startDate);
     document.getElementById('deliveryTime').textContent = formatDeliveryTimeRange(data.deliveryTime);
+    const discountPercentage = Number(data.discountPercentage) || 0;
+    const discountAmount = Number(data.discountAmount) || 0;
+    const originalPrice = data.originalPrice ?? data.price ?? 0;
+    const hasDiscount = discountPercentage > 0 && discountAmount > 0;
+
     document.getElementById('subscriptionPrice').textContent = data.price ?? 0;
+    document.getElementById('originalPrice').textContent = originalPrice;
+    document.getElementById('discountPercentage').textContent = discountPercentage;
+    document.getElementById('discountAmount').textContent = discountAmount;
+    document.getElementById('originalPriceDiv').classList.toggle('hidden', !hasDiscount);
+    document.getElementById('discountDiv').classList.toggle('hidden', !hasDiscount);
+    document.getElementById('afterDiscountLabel').textContent = hasDiscount ? ' بعد الخصم' : '';
     document.getElementById('deliveryPrice').textContent = data.deliveryPrice ?? 0;
     document.getElementById('totalPrice').textContent = data.totalPrice ?? 0;
 

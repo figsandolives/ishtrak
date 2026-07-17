@@ -239,16 +239,23 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">نسبة الخصم على الاشتراك (%)</label>
+                            <input type="number" id="discountPercentage" step="0.01" min="0" max="100" value="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" oninput="updateTotalPrice()">
+                            <div class="text-xs text-gray-500 mt-1">لا يشمل الخصم قيمة التوصيل</div>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">سعر التوصيل (د.ك)</label>
-                            <input type="number" id="deliveryPrice" step="0.1" min="0" value="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" onchange="updateTotalPrice()">
+                            <input type="number" id="deliveryPrice" step="0.1" min="0" value="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" oninput="updateTotalPrice()">
                             <div id="freeDeliveryNote" class="text-sm text-green-600 mt-1 hidden">✅ التوصيل مجاني</div>
                         </div>
                         <div class="bg-gray-100 rounded-lg p-4">
                             <div class="text-sm text-gray-600 mb-2">ملخص الأسعار:</div>
                             <div class="space-y-1">
-                                <div class="flex justify-between"><span>سعر الاشتراك:</span><span id="subscriptionPriceDisplay">0 د.ك</span></div>
+                                <div class="flex justify-between"><span>سعر الاشتراك:</span><span id="subscriptionOriginalPriceDisplay">0 د.ك</span></div>
+                                <div class="flex justify-between text-red-600"><span>الخصم:</span><span id="discountAmountDisplay">0 د.ك</span></div>
+                                <div class="flex justify-between"><span>بعد الخصم:</span><span id="subscriptionPriceDisplay">0 د.ك</span></div>
                                 <div class="flex justify-between"><span>سعر التوصيل:</span><span id="deliveryPriceDisplay">0 د.ك</span></div>
                                 <div class="flex justify-between font-bold border-t pt-1"><span>الإجمالي:</span><span id="totalPriceDisplay">0 د.ك</span></div>
                             </div>
@@ -765,17 +772,39 @@
             }
         }
 
-        // تحديث السعر الإجمالي
+        function roundCurrency(value) {
+            return Math.round((value + Number.EPSILON) * 1000) / 1000;
+        }
+
+        function getPricingSummary() {
+            const discountInput = document.getElementById('discountPercentage');
+            const deliveryInput = document.getElementById('deliveryPrice');
+            const rawDiscount = parseFloat(discountInput?.value) || 0;
+            const discountPercentage = Math.min(100, Math.max(0, rawDiscount));
+            if (discountInput && rawDiscount !== discountPercentage) {
+                discountInput.value = discountPercentage;
+            }
+            const originalPrice = roundCurrency(selectedPrice);
+            const discountAmount = roundCurrency(originalPrice * discountPercentage / 100);
+            const discountedPrice = roundCurrency(originalPrice - discountAmount);
+            const deliveryPrice = roundCurrency(Math.max(0, parseFloat(deliveryInput?.value) || 0));
+            const totalPrice = roundCurrency(discountedPrice + deliveryPrice);
+
+            return { originalPrice, discountPercentage, discountAmount, discountedPrice, deliveryPrice, totalPrice };
+        }
+
+        // تحديث السعر الإجمالي: الخصم على الاشتراك فقط ولا يشمل التوصيل
         function updateTotalPrice() {
-            const deliveryPrice = parseFloat(document.getElementById('deliveryPrice').value) || 0;
-            const totalPrice = selectedPrice + deliveryPrice;
-            
-            document.getElementById('subscriptionPriceDisplay').textContent = selectedPrice + ' د.ك';
-            document.getElementById('deliveryPriceDisplay').textContent = deliveryPrice + ' د.ك';
-            document.getElementById('totalPriceDisplay').textContent = totalPrice + ' د.ك';
+            const pricing = getPricingSummary();
+
+            document.getElementById('subscriptionOriginalPriceDisplay').textContent = pricing.originalPrice + ' د.ك';
+            document.getElementById('discountAmountDisplay').textContent = `- ${pricing.discountAmount} د.ك (${pricing.discountPercentage}%)`;
+            document.getElementById('subscriptionPriceDisplay').textContent = pricing.discountedPrice + ' د.ك';
+            document.getElementById('deliveryPriceDisplay').textContent = pricing.deliveryPrice + ' د.ك';
+            document.getElementById('totalPriceDisplay').textContent = pricing.totalPrice + ' د.ك';
             
             const freeDeliveryNote = document.getElementById('freeDeliveryNote');
-            if (deliveryPrice === 0) {
+            if (pricing.deliveryPrice === 0) {
                 freeDeliveryNote.classList.remove('hidden');
             } else {
                 freeDeliveryNote.classList.add('hidden');
@@ -816,6 +845,8 @@
                 customImageUrl = selectedSubscription.image;
             }
 
+            const pricing = getPricingSummary();
+
             // جمع البيانات
             const formData = {
                 customerName: document.getElementById('customerName').value,
@@ -827,12 +858,15 @@
                     image: customImageUrl || (selectedSubscription.image ? `./${selectedSubscription.image}` : null)
                 },
                 period: selectedPeriod,
-                price: selectedPrice,
+                originalPrice: pricing.originalPrice,
+                discountPercentage: pricing.discountPercentage,
+                discountAmount: pricing.discountAmount,
+                price: pricing.discountedPrice,
                 startDate: document.getElementById('startDate').value,
                 deliveryTime: document.getElementById('deliveryTime').value,
                 excludedDays: excludedDays,
-                deliveryPrice: parseFloat(document.getElementById('deliveryPrice').value) || 0,
-                totalPrice: selectedPrice + (parseFloat(document.getElementById('deliveryPrice').value) || 0),
+                deliveryPrice: pricing.deliveryPrice,
+                totalPrice: pricing.totalPrice,
             };
 
             if (!isEditing) {
@@ -992,11 +1026,16 @@ ${customerLink}`;
                 generateAddressFields(data.addressType, data.address);
                 initializeSubscriptionTypes(data.subscription.id);
                 selectSubscription(subscriptionTypes.find(s => s.id === data.subscription.id));
-                selectPeriod(data.period, data.price);
+                const originalPrice = data.originalPrice ?? data.subscription?.prices?.[data.period] ?? data.price;
+                selectPeriod(data.period, originalPrice);
+                if (data.subscription?.isCustom && document.getElementById('customPrice')) {
+                    document.getElementById('customPrice').value = originalPrice;
+                }
                 document.getElementById('startDate').value = data.startDate;
                 document.getElementById('deliveryTime').value = data.deliveryTime;
                 initializeWeekDays(data.excludedDays);
                 document.getElementById('deliveryPrice').value = data.deliveryPrice;
+                document.getElementById('discountPercentage').value = data.discountPercentage ?? 0;
                 updateTotalPrice();
                 calculateEndDate();
 
@@ -1181,6 +1220,12 @@ ${customerLink}`;
                             <div><strong>تاريخ البدء:</strong> ${startDateFormatted}</div>
                             <div><strong>تاريخ الانتهاء:</strong> ${endDateFormatted}</div>
                             <div><strong>وقت التوصيل:</strong> ${formatDeliveryTimeRange(data.deliveryTime)}</div>
+                            ${(Number(data.discountPercentage) || 0) > 0 ? `
+                                <div><strong>سعر الاشتراك قبل الخصم:</strong> ${data.originalPrice ?? data.price} د.ك</div>
+                                <div><strong>الخصم:</strong> ${data.discountPercentage}% (${data.discountAmount} د.ك)</div>
+                                <div><strong>سعر الاشتراك بعد الخصم:</strong> ${data.price} د.ك</div>
+                            ` : `<div><strong>سعر الاشتراك:</strong> ${data.price} د.ك</div>`}
+                            <div><strong>سعر التوصيل:</strong> ${data.deliveryPrice ?? 0} د.ك</div>
                             <div><strong>الإجمالي:</strong> ${data.totalPrice} د.ك</div>
                             ${data.excludedDays.length > 0 ? `<div class="col-span-2"><strong>الأيام المستبعدة:</strong> ${[...new Set(data.excludedDays)].map(day => ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'][day]).join(', ')}</div>` : ''}
                         </div>
